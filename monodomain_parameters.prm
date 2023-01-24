@@ -1,0 +1,87 @@
+# Listing of Parameters
+# ---------------------
+subsection FEM Parameters
+  # Problem dimension (2 or 3)
+  set Dimension value = 2
+
+  # Domain length (also used for radial length of disc)
+  set Length = 10.0 # in mm
+
+  # Domain width
+  set Width = 10.0 # in mm
+
+  # Polynomial degree for FEM discretization
+  set Polynomial degree = 1
+
+  # Global refinement level
+  set Global refinement value = 7
+
+  # Apply adaptive refiniment
+  set Adaptive refinement = false
+
+  # Boundary condition type (Neumann or Dirichlet)
+  set Boundary condition type = Neumann
+end
+
+subsection Time Stepping Parameters
+  # Number of time steps (positive integer)
+  set Number of time steps = 100
+
+  # Initial time t0 (in ms)
+  set Initial time value = 0.0
+
+  # Final time tf (in ms)
+  set Final time value = 10.0
+
+  set OperatorSplit time stepping method = BEST2-2
+
+  # Time stepping method (see choices below)
+  # choose BACKWARD_EULER, IMPLICIT_MIDPOINT, CRANK_NICOLSON, or SDIRK_TWO_STAGES
+  set Tissue time stepping method = SDIRK_TWO_STAGES
+
+  set Membrane time stepping method = HEUN2
+end
+
+subsection Tissue Parameters
+  # Cells per unit volume (chi, in )
+  set chi value = 1.0
+
+  # Capacitance (Cm, in )
+  set Cm value = 1.0
+
+  # Conductivity tensor values
+  set sigmaix value  = 1.0
+  set sigmaiy value  = 1.0
+  set sigmaixy value = 0.0
+
+  # Multiplier lambda
+  set lambda value = 1.0
+end
+
+subsection Linear Solver Parameters
+  # Type of solver used to solve the linear system
+  set Solver type = CG # not used yet
+
+  # Linear solver residual (scaled by residual norm)
+  set Residual = 1e-12
+
+  # Linear solver iterations (multiples of the system matrix size)
+  set Max iteration multiplier = 10
+end
+
+subsection Output Parameters
+  # Number of messages to print in terminal during computation
+  set Number of messages to print = 100
+
+  # Flag to output pvtu files
+  set Output solution pvtu files = true
+
+  # Number of pvtu files to visualize solution
+  set Number of pvtu files = 100
+
+  # Flag to output solution error data
+  set Output solution error data = true
+
+  # File name for convergence study data
+  set File name = L2_error.txt
+end
