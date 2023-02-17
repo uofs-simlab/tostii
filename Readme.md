@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/589803608.svg)](https://zenodo.org/badge/latestdoi/589803608)
+
 # tost.II
 
 Source code for the Temporal Operator-Splitting Template library
