@@ -5,12 +5,13 @@
 
 namespace tostii {
 
-// ----------------------------------------------------------------------
-// ExplicitRungeKutta
-// ----------------------------------------------------------------------
+/**----------------------------------------------------------------------
+ * ExplicitRungeKutta
+ * ----------------------------------------------------------------------
+*/
 
-template <typename VectorType,typename TimeType>
-ExplicitRungeKutta<VectorType,TimeType>::ExplicitRungeKutta(
+template <typename VectorType, typename TimeType>
+ExplicitRungeKutta<VectorType, TimeType>::ExplicitRungeKutta(
     const runge_kutta_method method) {
   // virtual functions called in constructors and destructors never use the
   // override in a derived class
@@ -194,9 +195,10 @@ void ExplicitRungeKutta<VectorType, TimeType>::compute_stages(
   }
 }
 
-// ----------------------------------------------------------------------
-// ImplicitRungeKutta
-// ----------------------------------------------------------------------
+/**----------------------------------------------------------------------
+ * ImplicitRungeKutta
+ * ----------------------------------------------------------------------
+ */
 
 template <typename VectorType, typename TimeType>
 ImplicitRungeKutta<VectorType, TimeType>::ImplicitRungeKutta(
@@ -445,9 +447,10 @@ void ImplicitRungeKutta<VectorType, TimeType>::compute_residual(
   residual.sadd(-1.0, 1., y);
 }
 
-  // ----------------------------------------------------------------------
-  // Exact
-  // ----------------------------------------------------------------------
+/**----------------------------------------------------------------------
+ * Exact
+ * ----------------------------------------------------------------------
+ */
 template <typename VectorType, typename TimeType>
 TimeType Exact<VectorType, TimeType>::evolve_one_time_step(
     std::vector<std::function<void(const TimeType,      //
@@ -473,9 +476,10 @@ Exact<VectorType,TimeType>::get_status() const {
 }
 
 
-// ----------------------------------------------------------------------
-// OperatorSplit
-// ----------------------------------------------------------------------
+/**----------------------------------------------------------------------
+ * OperatorSplit
+ * ----------------------------------------------------------------------
+ */
 template <typename BVectorType, typename TimeType>
 OperatorSplit<BVectorType, TimeType>::OperatorSplit(
     const std::string                                    in_method_name, //
@@ -564,7 +568,7 @@ TimeType OperatorSplit<BVectorType, TimeType>::evolve_one_time_step(TimeType t, 
     jac_vfun_type id_minus_tau_J_inverse{operators[op].id_minus_tau_J_inverse};
 
     // Update blockref pointers for this stage's state
-    std::vector<int> m = mask[op];
+    auto m = mask[op];
     for(int j=0;j<nblocks[op];++j) {
       std::swap(blockrefs[op].block(j), y.block(m[j]));
     }
@@ -607,8 +611,9 @@ OperatorSplit<BVectorType, TimeType>::get_status() const {
 }
 
 
-/**
- * OperatorSplitSingle implementation
+/**----------------------------------------------------------------------
+ * OperatorSplitSingle
+ * ----------------------------------------------------------------------
  */
 template <typename VectorType, typename TimeType>
 OperatorSplitSingle<VectorType, TimeType>::OperatorSplitSingle(
@@ -623,8 +628,8 @@ template <typename VectorType, typename TimeType>
 TimeType OperatorSplitSingle<VectorType, TimeType>::evolve_one_time_step(
     f_vfun_type& /*f*/,                        //
     jac_vfun_type& /*id_minus_tau_J_inverse*/, //
-    TimeType t,                                  //
-    TimeType delta_t,                            //
+    TimeType t,                                //
+    TimeType delta_t,                          //
     VectorType& /*y*/) {
   // Not implemented
   return t + delta_t;
@@ -797,19 +802,28 @@ runge_kutta_method RK_string_to_enum(std::string method_name) {
 
 
 
-// compile-time template declarations
+/**
+ * Compile-time template declarations
+ */
+
 template class ExplicitRungeKutta<dealii::Vector<double>>;
 template class ImplicitRungeKutta<dealii::Vector<double>>;
 template class Exact<dealii::Vector<double>>;
 
-// Complex-valued
+// Complex-valued, with real-valud time
 template class ExplicitRungeKutta<dealii::Vector<std::complex<double>>>;
 template class ImplicitRungeKutta<dealii::Vector<std::complex<double>>>;
 template class Exact<dealii::Vector<std::complex<double>>>;
+
 // Complex-valued, with complex-valued time
 template class ExplicitRungeKutta<dealii::Vector<std::complex<double>>,std::complex<double>>;
 template class ImplicitRungeKutta<dealii::Vector<std::complex<double>>,std::complex<double>>;
 template class Exact<dealii::Vector<std::complex<double>>,std::complex<double>>;
+// Block vector, Complex-valued, with complex-valued time
+template class ExplicitRungeKutta<dealii::BlockVector<std::complex<double>>,std::complex<double>>;
+template class ImplicitRungeKutta<dealii::BlockVector<std::complex<double>>,std::complex<double>>;
+template class Exact<dealii::BlockVector<std::complex<double>>,std::complex<double>>;
+
 
 template class ExplicitRungeKutta<dealii::BlockVector<double>>;
 template class ImplicitRungeKutta<dealii::BlockVector<double>>;
@@ -822,8 +836,9 @@ template class ImplicitRungeKutta<dealii::PETScWrappers::MPI::BlockVector>;
 // template class ExplicitRungeKutta<dealii::PETScWrappers::MPI::Vector>;
 // template class ImplicitRungeKutta<dealii::PETScWrappers::MPI::Vector>;
 
+// OS types
 template class OperatorSplit<dealii::BlockVector<double>>;
-template class OperatorSplit<dealii::BlockVector<std::complex<double>>>;
+template class OperatorSplit<dealii::BlockVector<std::complex<double>>,std::complex<double>>;
 template class OperatorSplit<dealii::PETScWrappers::MPI::BlockVector>;
 // template class OperatorSplit<dealii::PETScWrappers::MPI::Vector>;
 

@@ -14,10 +14,14 @@
  * ---------------------------------------------------------------------
 
  *
+ * Authors: Kevin R. Green, University of Saskatchewan
+ *
  * Modification of step-52 to use tost.II time integration
- *
- * Authors: Kevin Green, 2022
- *
+ * - Comments have generally been kept intact from the original, with
+     comments added that are specifically relevant to the OperatorSplit
+     integration.
+   - See https://www.dealii.org/current/doxygen/deal.II/step_52.html for
+     the original code that solved this problem.
  */
 
 // @sect3{Include files}
@@ -51,9 +55,6 @@
 // (has some overlap with deal.II/base/time_stepping.h)
 #include "tostii.h"
 
-// The next step is like in all previous tutorial programs: We put everything
-// into a namespace of its own and then import the deal.II classes and functions
-// into it.
 namespace Neutron {
 using namespace dealii;
 

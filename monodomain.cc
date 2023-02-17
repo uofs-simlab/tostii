@@ -11,15 +11,17 @@
  * The full text of the license can be found in the file LICENSE.md at
  * the top level directory of deal.II.
  *
- * This code is based on the tutorials step-6, step-7, step-11, step-17,
- * step-18, step-40, and step-52.
  *
  * ---------------------------------------------------------------------
 
  *
  * Authors: Sebastian Dominguez, University of Saskatchewan, 2021
- *          Kevin Green, University of Saskatchewan, 2021
+ *          Kevin R. Green, University of Saskatchewan, 2021
  *          Joyce Reimer, University of Saskatchewan, 2021
+ *
+ * This Monodomain solver code is based on the tutorials step-6,
+ * step-7, step-11, step-17, step-18, step-40, and step-52 for the FEM
+ * formulations, but uses the tost.II library for its time integration
  */
 
 // @sect3{Include files}
@@ -455,7 +457,6 @@ void OutputParameters::parse_parameters(ParameterHandler& prm) {
 }
 
 // Structure to call and gather all parameters
-// TODO: change this multiple inheritance
 struct AllParameters : public FEMParameters,
                        public TimeSteppingParameters,
                        public TissueParameters,
@@ -541,8 +542,6 @@ PotentialBoundaryValues<dim>::value(const Point<dim>& /* p */,
   return 0.0;
 }
 
-
-
 template <int dim> class Stimulus : public Function<dim, double> {
  private:
   double time;
@@ -550,13 +549,15 @@ template <int dim> class Stimulus : public Function<dim, double> {
   double magnitude;
   double start;
   double duration;
+
+  // axis-oriented ellipses for stimulus
   Point<dim> center;
   Point<dim> radius;
 
 public:
   Stimulus(double current_time, Parameters::AllParameters /*parameters*/)
       : Function<dim, double>(1), time(current_time) {
-    // TODO(krg) set stim parameters from file in here
+
     magnitude = 10.0;
     start = 0.;
     duration  = 1.0;
@@ -565,8 +566,7 @@ public:
     center[0] = 0.;
     center[1] = 0.;
 
-    // radial extent of stimulus
-    // TODO(krg) extend to elliptic shape?
+    // radial extents of stimulus
     radius[0] = 1.;
     radius[1] = 1.;
   }
@@ -601,7 +601,6 @@ double Stimulus<dim>::value(const Point<dim>&  p,
 
 
 // Implementation of the conductivity tensor sigmai.
-// TODO(krg): modify to do a more 'real' tensor
 template <int dim> class ConductivityTensor : public TensorFunction<2, dim> {
 private:
 
@@ -665,10 +664,10 @@ public:
   void run();
 
 private:
-  using os_pair_t = tostii::OSpair<double>;         //
-  using os_t      = std::vector<os_pair_t>; // ew ...
-  using ts_mem_t  = tostii::runge_kutta_method;     //
-  using ts_tis_t  = tostii::runge_kutta_method;     //
+  using os_pair_t = tostii::OSpair<double>;     //
+  using os_t      = std::vector<os_pair_t>;     //
+  using ts_mem_t  = tostii::runge_kutta_method; // type for membrane operator integration
+  using ts_tis_t  = tostii::runge_kutta_method; // type for tissue operator integration
 
   void make_grid();
   void refine_grid();
@@ -1203,7 +1202,7 @@ double InitialValues<dim>::value(const Point<dim>&  /* p */,
 
   double value = -1.2879118919372559;
 
-  // TODO(krg) Add logic and or f(x,y,z) for ICs here
+  // TODO(krg) Add logic and/or f(x,y,z) for ICs here
 
   return value;
 }
@@ -1490,7 +1489,6 @@ void MonodomainProblem<dim>::os_time_stepping(
   if (parameters.output_pvtu_files == true)
     output_results(0,0.0);
 
-  // TODO(krg) generalize better
   std::vector<tostii::OSmask> os_mask{
       {0, 1}, // Membrane block vars
       {0}     // Tissue block vars

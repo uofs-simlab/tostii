@@ -15,13 +15,18 @@ built (tested on Ubuntu, Fedora) via the command
 	./candi.sh -j N -y   # use N build threads, confirm default options
 ```
 
-Note that the candi build process for deal.II can take awhile, 30min
+If the above fails, it is likely due to system packages that are not
+installed on your system. The installer will suggest a list of
+packages for you to install from your operating system's repositories.
 
-With an appropriate version of deal.II installed, you can build this
+*Note* that the candi build process for deal.II can take awhile,
+approximately 30 minutes on a high end workstation.
+
+With an appropriate version of deal.II (>= v9.4.0) installed, you can build this
 project via cmake:
 ```
 	# Building in source is fine
-	cmake -DDEAL_II_DIR=$HOME/dealii-candi/deal.II-v9.4.1 .
+	cmake -DDEAL_II_DIR=$HOME/dealii-candi/deal.II-v9.4.1 -DCMAKE_BUILD_TYPE=Release .
 	make -j
 ```
 

@@ -18,8 +18,11 @@
 
  *
  * Authors: Sebastian Dominguez, University of Saskatchewan, 2021
- *          Kevin Green, University of Saskatchewan, 2021
+ *          Kevin R. Green, University of Saskatchewan, 2021
  *          Joyce Reimer, University of Saskatchewan, 2021
+ *
+ * This code is just like monodomain.cc, but with the linear solver
+ * type switched out to direct solvers
  */
 
 // @sect3{Include files}
@@ -463,7 +466,6 @@ void OutputParameters::parse_parameters(ParameterHandler& prm) {
 }
 
 // Structure to call and gather all parameters
-// TODO: change this multiple inheritance
 struct AllParameters : public FEMParameters,
                        public TimeSteppingParameters,
                        public TissueParameters,
@@ -564,7 +566,6 @@ template <int dim> class Stimulus : public Function<dim, double> {
 public:
   Stimulus(double current_time, Parameters::AllParameters /*parameters*/)
       : Function<dim, double>(1), time(current_time) {
-    // TODO(krg) set stim parameters from file in here
     magnitude = 10.0;
     start = 0.;
     duration  = 1.0;
@@ -573,8 +574,7 @@ public:
     center[0] = 0.;
     center[1] = 0.;
 
-    // radial extent of stimulus
-    // TODO(krg) extend to elliptic shape?
+    // radial extents of stimulus
     radius[0] = 1.;
     radius[1] = 1.;
   }
@@ -609,7 +609,6 @@ double Stimulus<dim>::value(const Point<dim>&  p,
 
 
 // Implementation of the conductivity tensor sigmai.
-// TODO(krg): modify to do a more 'real' tensor
 template <int dim> class ConductivityTensor : public TensorFunction<2, dim> {
 private:
 

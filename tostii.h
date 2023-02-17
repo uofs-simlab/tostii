@@ -1,6 +1,8 @@
 /**
- * Timestepping extracted from deal.ii to give it a better interface, faster
- * compile / development loop
+ * Timestepping extracted from deal.ii to give it a better interface,
+ * and a faster compile / development loop. The data structures
+ * required for OperatorSplit time integration are found towards the
+ * end of the file.
  */
 #pragma once
 #ifndef TOSTII_HPP
@@ -474,7 +476,7 @@ private:
     size_t   op_num;
     TimeType alpha;
   };
-  typedef std::vector<int> OSmask;
+  typedef std::vector<size_t> OSmask;
 
   template <typename VectorType, typename TimeType = double> struct OSoperator {
     // Function signature types

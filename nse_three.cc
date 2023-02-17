@@ -13,8 +13,15 @@
  *
  * ---------------------------------------------------------------------
  *
- * Author: Wolfgang Bangerth, Colorado State University
- *         Yong-Yong Cai, Beijing Computational Science Research Center
+ * Authors: Kevin R. Green, University of Saskatchewan
+
+ * Modification of step-58 to use tost.II time integration
+ * - Comments have generally been kept intact from the original, with
+     comments added that are specifically relevant to the OperatorSplit
+     integration.
+   - See https://www.dealii.org/current/doxygen/deal.II/step_58.html for
+     the original code that solved this problem.
+   - This code also splits the problem into 3 operators.
  */
 
 // @sect3{Include files}
