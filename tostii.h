@@ -9,6 +9,7 @@
 #define TOSTII_HPP
 
 #include <complex>
+#include <unordered_map>
 
 #include <deal.II/lac/generic_linear_algebra.h>
 
