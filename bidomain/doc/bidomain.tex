@@ -1,0 +1,426 @@
+\documentclass{article}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+
+\newcommand{\bvec}[1]{\boldsymbol{#1}}
+\newcommand{\brvec}[1]{\mathbf{#1}}
+\newcommand{\bmat}[1]{\boldsymbol{#1}}
+\newcommand{\brmat}[1]{\mathbf{#1}}
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\mathrm{d}}
+
+\begin{document}
+
+\section{Introduction}
+
+Let:
+\begin{align*}
+    n & \in \mathbb{N} \\
+    T & \in \mathbb{R} \\
+    \Omega & \subseteq \mathbb{R}^n \\
+    \chi, C_m & \in \mathbb{R} \\
+    \bmat{\sigma}_\text{i}, \bmat{\sigma}_\text{e} & \in \mathbb{R}^{n \times n} \\
+    I_\text{ion} & : \mathbb{R} \rightarrow \mathbb{R} \\
+    f, f_\text{e} & : (0, T) \times \Omega \rightarrow \mathbb{R} \\
+    v, u_\text{e} & : (0, T) \times \Omega \rightarrow \mathbb{R}
+\end{align*}
+Denote $\bvec{w}(t, \bvec{x}) = \begin{bmatrix}
+    v \\
+    u_\text{e}
+\end{bmatrix}$. The Bidomain problem is given as:
+\begin{align} \label{eq1}
+    \chi C_\text{m} \frac{\partial v}{\partial t}
+        + \chi I_\text{ion}(v)
+        & = \nabla \cdot (\bmat{\sigma}_\text{i} \nabla (v + u_\text{e}))
+        + f \\
+    \label{eq2}
+    0
+        & = \nabla \cdot (\bmat{\sigma}_\text{i} \nabla (v + u_\text{e}))
+        + \nabla \cdot (\bmat{\sigma}_\text{e} \nabla u_\text{e})
+        + f_\text{e}
+\end{align}
+\noindent With initial conditions:
+\begin{equation}
+    \bvec{w}(0, \bvec{x}) = \bvec{w}_0(\bvec{x})
+\end{equation}
+\noindent For all $\bvec{x} \in \Omega$ and with boundary conditions:
+\begin{equation} \label{BCs}
+    \bmat{\sigma}_\text{i} \nabla (v + u_\text{e}) \cdot \hat{\brvec{n}}
+        = \bmat{\sigma}_\text{e} \nabla u_\text{e} \cdot \hat{\brvec{n}}
+        = 0
+\end{equation}
+\noindent For all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$.
+
+Let $R_\text{m} \in \mathbb{R}$.
+For a passive cell model, we take $I_\text{ion}(v) = \frac{1}{R_\text{m}} v$.
+We also assume that $\bmat{\sigma}_\text{i} = \sigma_\text{i} \brmat{I}$
+and $\bmat{\sigma}_\text{e} = \sigma_\text{e} \brmat{I}$
+for some $\sigma_\text{i}, \sigma_\text{e} \in \mathbb{R}$,
+so that $\bmat{\sigma}_\text{i}$ and $\bmat{\sigma}_\text{e}$
+can be replaced with $\sigma_\text{i}$ and $\sigma_\text{e}$
+in the equations above.
+
+\newpage
+
+\section{Toy Problem}
+
+We consider a toy problem with $T = 1$, and $\Omega = [0, 1]^n$:
+\begin{align}
+    u_\text{e}(t, \bvec{x}) & = t^3 \prod_{i = 1}^n \cos(\pi x_i) \\
+    v(t, \bvec{x}) & = -\frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} u_\text{e}(t, \bvec{x})
+\end{align}
+\noindent It is clear that $v(0, \bvec{x}) = u_\text{e}(0, \bvec{x}) = 0$, so we take $\bvec{w}_0(\bvec{x}) = \brvec{0}$.
+
+Next, we consider:
+\begin{align*}
+    \sigma_\text{i} \nabla (v + u_\text{e})
+        & = \sigma_\text{i} (\nabla v + \nabla u_\text{e}) \\
+        & = \sigma_\text{i} (-\frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} \nabla u_\text{e} + \nabla u_\text{e}) \\
+        & = -\sigma_\text{i} \nabla u_\text{e} - \sigma_\text{e} \nabla u_\text{e} + \sigma_\text{i} \nabla u_\text{e} \\
+        & = -\sigma_\text{e} \nabla u_\text{e}
+\end{align*}
+\noindent Since $\frac{\partial u_\text{e}}{\partial x_k} = -\pi t^3 \sin(\pi x_k) \prod_{i \neq k} \cos(\pi x_i)$, we see that
+$\frac{\partial u_\text{e}}{\partial x_k} = 0$ when $x_k \in \mathbb{Z}$.
+Recall that $\Omega = [0, 1]^n$; then, on the $x_k$-faces of $\partial \Omega$,
+we have that $\frac{\partial u_\text{e}}{\partial x_k} = 0$
+and $\hat{\brvec{n}} = \pm \hat{\brvec{e}}_k$.
+So, $\nabla u_\text{e} \cdot \hat{\brvec{n}} = 0$ for all $\bvec{x} \in \partial \Omega$,
+and both boundary conditions in Equation \ref{BCs} are satisfied.
+
+Then, we determine $f$ and $f_\text{e}$.
+From above, we have that $\sigma_\text{i} \nabla (v + u_\text{e}) = -\sigma_\text{e} \nabla u_\text{e}$,
+and so, rewriting Equation \ref{eq2}:
+\begin{align*}
+    f_\text{e} & = 
+            - \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) 
+            - \nabla \cdot (\sigma_\text{e} \nabla u_\text{e}) \\
+        & = \nabla \cdot (\sigma_\text{e} \nabla u_\text{e})
+            - \nabla \cdot (\sigma_\text{e} \nabla u_\text{e}) \\
+        & = 0
+\end{align*}
+\noindent When we note that:
+\begin{align*}
+    \frac{\partial^2 u_\text{e}}{\partial x_k^2} & =
+            - \frac{\partial}{\partial x_k} \pi t^3 \sin(\pi x_k) \prod_{i \neq k} \cos(\pi x_i) \\
+        & = - \pi^2 t^3 \prod_{i = 1}^n \cos(\pi x_i) \\
+        & = - \pi^2 u_\text{e} \\
+    \Delta u_\text{e} & =
+            \sum_{k = 1}^n \frac{\partial^2 u_\text{e}}{\partial x_k^2} \\
+        & = - \sum_{k = 1}^n \pi^2 u_\text{e} \\
+        & = - n \pi^2 u_\text{e}
+\end{align*}
+\noindent We rewrite Equation \ref{eq1}:
+\begin{align*}
+    f & = \chi C_\text{m} \frac{\partial v}{\partial t}
+            + \chi I_\text{ion}(v)
+            - \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+        & = - \chi C_\text{m} \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} \frac{\partial u_\text{e}}{\partial t}
+            + \chi I_\text{ion}(v)
+            - \nabla \cdot (-\sigma_\text{e} \nabla u_\text{e}) \\
+        & = - \chi C_\text{m} \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} \frac{3}{t} u_\text{e}
+            - \chi \frac{1}{R_\text{m}} \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} u_\text{e}
+            + \sigma_\text{e} \Delta u_\text{e} \\
+        & = - \chi (\frac{3 C_\text{m}}{t} + \frac{1}{R_\text{m}}) \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} u_\text{e}
+            - n \sigma_\text{e} \pi^2 u_\text{e} \\
+        & = - (\chi \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} (\frac{3 C_\text{m}}{t} + \frac{1}{R_\text{m}})
+            + n \sigma_\text{e} \pi^2) u_\text{e}
+\end{align*}
+
+\newpage
+
+\section{Toy Problem 2}
+
+We consider a second toy problem with $T = 1$ and $\Omega = [0, 1]^n$:
+\begin{align*}
+    u_\text{e}(t, \bvec{x}) & = \ee^{-t} \prod_{i = 1}^n \cos(\pi x_i) \\
+    v(t, \bvec{x}) & = -\frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} u_\text{e}(t, \bvec{x})
+\end{align*}
+\noindent When $t = 0$, we have that $\ee^{-t} = 1$, so:
+\begin{align*}
+    \bvec{w}_0(\bvec{x}) = -\frac{1}{\sigma_\text{i}} \begin{bmatrix}
+        -\sigma_\text{i} \\
+        \sigma_\text{i} + \sigma_\text{e}
+    \end{bmatrix} \prod_{i = 1}^n \cos(\pi x_i)
+\end{align*}
+
+Next, we consider:
+\begin{align*}
+    \sigma_\text{i} \nabla (v + u_\text{e}) & = \sigma_\text{i} (\nabla v + \nabla u_\text{e}) \\
+        & = \sigma_\text{i} (-\frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} \nabla u_\text{e}
+            + \nabla u_\text{e}) \\
+        & = -\sigma_\text{i} \nabla u_\text{e} - \sigma_\text{e} \nabla u_\text{e} + \sigma_\text{i} \nabla u_\text{e} \\
+        & = -\sigma_\text{e} \nabla u_\text{e}
+\end{align*}
+\noindent Since $\frac{\partial u_\text{e}}{\partial x_k} = -\pi \ee^{-t} \sin(\pi x_k) \prod_{i \neq k} \cos(\pi x_i)$,
+we see that $\frac{\partial u_\text{e}}{\partial x_k} = 0$ when $x_k \in \mathbb{Z}$.
+Recall that $\Omega = [0, 1]^n$; then, on the $x_k$-faces of $\partial \Omega$,
+we have that $\frac{\partial u_\text{e}}{\partial x_k} = 0$
+and $\hat{\brvec{n}} = \pm \hat{\brvec{e}}_k$.
+So, $\nabla u_\text{e} \cdot \hat{\brvec{n}} = 0$ for all $\bvec{x} \in \partial \Omega$,
+and both boundary conditions in Equation \ref{BCs} are satisfied.
+
+Then, we determine $f$ and $f_\text{e}$.
+From above, we have that $\sigma_\text{i} \nabla (v + u_\text{e}) = - \sigma_\text{e} \nabla u_\text{e}$,
+and so, rewriting Equation \ref{eq2}:
+\begin{align*}
+    f_\text{e} & = -\nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) - \nabla \cdot (\sigma_\text{e} \nabla u_\text{e}) \\
+        & = \nabla \cdot (\sigma_\text{e} \nabla u_\text{e}) - \nabla \cdot (\sigma_\text{e} \nabla u_\text{e}) \\
+        & = 0
+\end{align*}
+\noindent When we note that:
+\begin{align*}
+    \frac{\partial^2 u_\text{e}}{\partial x_k^2}
+        & = -\frac{\partial}{\partial x_k} \pi \ee^{-t} \sin(\pi x_k) \prod_{i \neq k} \cos(\pi x_i) \\
+        & = -\pi^2 \ee^{-t} \prod_{i = 1}^n \cos(\pi x_i) \\
+        & = -\pi^2 u_\text{e} \\
+    \Delta u_\text{e}
+        & = \sum_{k = 1}^n \frac{\partial^2 u_\text{e}}{\partial x_k^2} \\
+        & = -\sum_{k = 1}^n \pi^2 u_\text{e} \\
+        & = -n \pi^2 u_\text{e}
+\end{align*}
+\noindent We rewrite Equation \ref{eq1}:
+\begin{align*}
+    f & = \chi C_\text{m} \frac{\partial v}{\partial t}
+            + \chi I_\text{ion}(v)
+            - \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+        & = -\chi C_\text{m} \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} \frac{\partial u_\text{e}}{\partial t}
+            + \chi \frac{1}{R_\text{m}} v
+            - \nabla \cdot (-\sigma_\text{e} \nabla u_\text{e}) \\
+        & = \chi C_\text{m} \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} u_\text{e}
+            -\chi \frac{1}{R_\text{m}} \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} u_\text{e}
+            + \sigma_\text{e} \Delta u_\text{e} \\
+        & = \chi \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} (C_\text{m} - \frac{1}{R_\text{m}}) u_\text{e}
+            - n \sigma_\text{e} \pi^2 u_\text{e} \\
+        & = (\chi \frac{\sigma_\text{i} + \sigma_\text{e}}{\sigma_\text{i}} (C_\text{m} - \frac{1}{R_\text{m}})
+            - n \sigma_\text{e} \pi^2) u_\text{e}
+\end{align*}
+
+\newpage
+
+\section{Spatial Discretization}
+
+We consider a set of basis functions $\bvec{\Phi}_i : \mathbb{R}^n \rightarrow \mathbb{R}^2$,
+where each $\bvec{\Phi}_i(\bvec{x}) = \varphi_{b_i} \hat{\brvec{e}}_{c_i}$
+for some set of basis functions $\varphi_i : \mathbb{R} \rightarrow \mathbb{R}$
+($b_i$ is the "base" of the index $i$, and $c_i$ is the "component" of index $i$).
+For some fixed time $t$,
+we make the approximation that $\bvec{w} = W_j \bvec{\Phi}_j$ (Einstein summation)
+where $\bvec{W} \in \mathbb{R}^N$ ($N$ is the number of DoFs).
+Furthermore, we write that $\frac{\partial \bvec{w}}{\partial t} = X_j \bvec{\Phi}_j$
+for some $\bvec{X} \in \mathbb{R}^N$. Then, we may write:
+\begin{align*}
+    v & = \bvec{w} \cdot \hat{\brvec{e}}_1 \\
+        & = W_j \varphi_{b_j} \delta_{1,c_j} \\
+    u_\text{e} & = \bvec{w} \cdot \hat{\brvec{e}}_2 \\
+        & = W_j \varphi_{b_j} \delta_{2,c_j} \\
+    \frac{\partial v}{\partial t} & = \frac{\partial \bvec{w}}{\partial t} \cdot \hat{\brvec{e}}_1 \\
+        & = X_j \varphi_{b_j} \delta_{1,c_j}
+\end{align*}
+
+Equation \ref{eq1} becomes:
+\begin{align*}
+    \chi C_\text{m} X_j \varphi_{b_j} \delta_{1,c_j}
+            + \chi I_\text{ion}(W_j \varphi_{b_j} \delta_{1,c_j})
+        = \nabla \cdot (\sigma_\text{i} \nabla (W_j \varphi_{b_j} \delta_{1,c_j} + W_j \varphi_{b_j} \delta_{2,c_j}))
+            + f
+\end{align*}
+\noindent And, because $\delta_{1,c_j} + \delta_{2,c_j} = 1$:
+\begin{align*}
+    \chi C_\text{m} X_j \varphi_{b_j} \delta_{1,c_j}
+            + \chi I_\text{ion}(W_j \varphi_{b_j} \delta_{1,c_j})
+        = \nabla \cdot (\sigma_\text{i} \nabla (W_j \varphi_{b_j}))
+            + f
+\end{align*}
+Similarly, Equation \ref{eq2} becomes:
+\begin{align*}
+    0 & = \nabla \cdot (\sigma_\text{i} \nabla (W_j \varphi_{b_j} \delta_{1,c_j} + W_j \varphi_{b_j} \delta_{2,c_j}))
+            + \nabla \cdot (\sigma_\text{e} \nabla (W_j \varphi_{b_j} \delta_{2,c_j}))
+            + f_\text{e} \\
+        & = \nabla \cdot (\sigma_\text{i} \nabla (W_j \varphi_{b_j}))
+            + \nabla \cdot (\sigma_\text{e} \nabla (W_j \varphi_{b_j} \delta_{2,c_j}))
+            + f_\text{e}
+\end{align*}
+
+Next, we multiply by a test function $\bvec{\Phi}_i$ and integrate:
+\begin{align*}
+    & \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \chi C_\text{m} X_j \varphi_{b_j} \delta_{1,c_j} + \chi I_\text{ion}(W_j \varphi_{b_j} \delta_{1,c_j}) \\
+            0
+        \end{matrix} \right> \\
+    & \qquad = \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \nabla \cdot (\sigma_\text{i} \nabla (W_j \varphi_{b_j})) \\
+            \nabla \cdot (\sigma_\text{i} \nabla (W_j \varphi_{b_j})
+                + \sigma_\text{e} \nabla (W_j \varphi_{b_j} \delta_{2,c_j}))
+        \end{matrix} \right>
+        + \left< \bvec{\Phi}_i \mid \begin{matrix}
+            f \\
+            f_\text{e}
+        \end{matrix} \right>
+\end{align*}
+\noindent Since $\bvec{\Phi}_i(\bvec{x}) = \varphi_{b_i} \hat{\brvec{e}}_{c_i}$:
+\begin{align*}
+    & \chi C_\text{m} X_j \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \delta_{1,c_i} \delta_{1,c_j}
+            + \frac{\chi}{R_\text{m}} W_j \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \delta_{1,c_i} \delta_{1,c_j} \\
+        & \qquad = \sigma_\text{i} W_j \left< \varphi_{b_i} \mid \nabla \cdot \nabla \varphi_{b_j} \right> \delta_{1,c_i} \\
+        & \qquad + \sigma_\text{i} W_j \left< \varphi_{b_i} \mid \nabla \cdot \nabla \varphi_{b_j} \right> \delta_{2,c_i}
+            + \sigma_\text{e} W_j \left< \varphi_{b_i} \mid \nabla \cdot \nabla \varphi_{b_j} \right> \delta_{2,c_i} \delta_{2,c_j} \\
+        & \qquad + \left< \varphi_{b_i} \mid f \right> \delta_{1,c_i}
+            + \left< \varphi_{b_i} \mid f_\text{e} \right> \delta_{2,c_i}
+\end{align*}
+\noindent Then, since $\left< \varphi_{b_i} \mid \nabla \cdot \nabla \varphi_{b_j} \right>
+    = - \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right>$,
+and since $\delta_{1,c_i} + \delta_{2,c_i} = 1$:
+\begin{align*}
+    & \chi C_\text{m} X_j \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \delta_{1,c_i} \delta_{1,c_j}
+            = - \frac{\chi}{R_\text{m}} W_j \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \delta_{1,c_i} \delta_{1,c_j} \\
+        & \qquad - \sigma_\text{i} W_j \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right>
+            - \sigma_\text{e} W_j \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> \delta_{2,c_i} \delta_{2,c_j} \\
+        & \qquad + \left< \varphi_{b_i} \mid f \right> \delta_{1,c_i}
+            + \left< \varphi_{b_i} \mid f_\text{e} \right> \delta_{2,c_i}
+\end{align*}
+\noindent So, denote:
+\begin{align*}
+    A_{ij} & = -\frac{\chi}{R_\text{m}} \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \delta_{1,c_i} \delta_{1,c_j}
+        - (\sigma_\text{i} + \sigma_\text{e} \delta_{2,c_i} \delta_{2,c_j}) \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> \\
+    M_{ij} & = \chi C_\text{m} \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \delta_{1,c_i} \delta_{1,c_j} \\
+    f_i & = \left< \varphi_{b_i} \mid f \right> \delta_{1,c_i} + \left< \varphi_{b_i} \mid f_\text{e} \right> \delta_{2,c_i}
+\end{align*}
+\noindent Then:
+\begin{align} \label{mateq}
+    \bmat{M} \bvec{X} = \bmat{A} \bvec{W} + \bvec{f}
+\end{align}
+\noindent We note that:
+1) Although we have formulated the problem as an affine equation,
+this is only the case because $I_\text{ion}(v) = \frac{1}{R_\text{m}} v$,
+and if we were not using a passive cell model,
+we may not be able to represent $\bmat{A}$ as a matrix;
+2) $\bmat{M}$ and (in this case) $\bmat{A}$ are constant matrices,
+while $\bvec{X}$, $\bvec{W}$, and $\bvec{f}$ each depend on the current time step.
+
+\newpage
+
+\section{Time Integration}
+
+Let us discretize the time domain $(0, T)$ into $k$ fixed-size time steps,
+so denote the step size $h = \frac{T}{k}$.
+We make the approximation:
+\begin{align*}
+    \frac{\partial \bvec{w}_{t + 1}}{\partial t} = \frac{\bvec{w}_{t + 1} - \bvec{w}_t}{h}
+\end{align*}
+\noindent Then, recall that we have already made the approximation:
+\begin{align*}
+    \bvec{w} & = W_j \varphi_j \\
+    \frac{\partial \bvec{w}}{\partial t} & = X_j \varphi_j
+\end{align*}
+\noindent This implies:
+\begin{align*}
+    X_{t + 1,j} \varphi_j = \frac{W_{t + 1,j} - W_{t,j}}{h} \varphi_j
+\end{align*}
+\noindent To keep these approximations consistent, we may simply define:
+\begin{align*}
+    \bvec{X}_{t + 1} = \frac{1}{h}(\bvec{W}_{t + 1} - \bvec{W}_t)
+\end{align*}
+
+We wish to integrate using the Crank-Nicolson scheme,
+which we apply to Equation \ref{mateq} as follows:
+\begin{align*}
+    \frac{1}{h} \bmat{M} (\bvec{W}_{t + 1} - \bvec{W}_t)
+        & = \frac{1}{2} (\bmat{A} \bvec{W}_t + \bvec{f}_t)
+            + \frac{1}{2} (\bmat{A} \bvec{W}_{t + 1} + \bvec{f}_{t + 1}) \\
+    \bmat{M} (\bvec{W}_{t + 1} - \bvec{W}_t)
+        & = \frac{h}{2} \bmat{A} (\bvec{W}_{t + 1} + \bvec{W}_t)
+            + \frac{h}{2} (\bvec{f}_{t + 1} + \bvec{f}_t)
+\end{align*}
+
+As mentioned in the previous section, although this equation is affine,
+there are cases in which the vector function $\bmat{A}$ may be nonlinear;
+so, we will use Newton's method to solve for $\bvec{W}_{t + 1}$. So, define:
+\begin{align*}
+    \bvec{R}_{t + 1}(\bvec{W})
+        = \bmat{M}(\bvec{W} - \bvec{W}_t)
+            - \frac{h}{2} \bmat{A} (\bvec{W} + \bvec{W}_t)
+            - \frac{h}{2} (\bvec{f}_{t + 1} + \bvec{f}_t)
+\end{align*}
+\noindent Where $\bvec{W}_t$ above has been determined by the initial conditions
+or by the previous time step. The iteration proceeds as follows:
+\begin{align*}
+    \bvec{W}_{t + 1}^{(0)} & = \bvec{W}_t \\
+    \brmat{J}[\bvec{R}_{t + 1}] \Delta \bvec{W}_{t + 1}^{(\ell + 1)} & = - \bvec{W}_{t + 1}^{(\ell)} \\
+    \bvec{W}_{t + 1}^{(\ell + 1)} & = \bvec{W}_{t + 1}^{(\ell)} + \alpha_{t + 1} \Delta \bvec{W}_{t + 1}^{(\ell + 1)}
+\end{align*}
+\noindent Where $\brmat{J}[\bvec{R}_{t + 1}]$ is the Jacobian of $\bvec{R}_{t + 1}$
+and $\alpha_{t + 1}$ is a step size to be chosen by the Newton solver.
+Once the residual $||\bvec{W}_{t + 1}^{(\ell)}||$ is sufficiently small,
+we take $\bvec{W}_{t + 1} = \bvec{W}_{t + 1}^{(\ell)}$ as the solution for the time step.
+
+\newpage
+
+\section{Linear Formulation}
+
+We can also solve the problem using the assumption that $I_\text{ion}(v) = \frac{1}{R_\text{m}} v$.
+If we solve using Backward Euler, we have that:
+\begin{align*}
+    \frac{1}{h} \bmat{M} (\bvec{W}_{t + 1} - \bvec{W}_t) & = \bmat{A} \bvec{W}_{t + 1} + \bvec{f}_{t + 1} \\
+    (\frac{1}{h} \bmat{M} - \bmat{A}) \bvec{W}_{t + 1} & = \frac{1}{h} \bmat{M} \bvec{W}_t + \bvec{f}_{t + 1}
+\end{align*}
+\noindent Or, using Crank-Nicolson:
+\begin{align*}
+    \frac{1}{h} \bmat{M} (\bvec{W}_{t + 1} - \bvec{W}_t)
+        & = \frac{1}{2} (\bmat{A} (\bvec{W}_{t + 1} + \bvec{W}_t) + \bvec{f}_{t + 1} + \bvec{f}_t) \\
+    (\frac{1}{h} \bmat{M} - \frac{1}{2} \bmat{A}) \bvec{W}_{t + 1}
+        & = (\frac{1}{h} \bmat{M} + \frac{1}{2} \bmat{A}) \bvec{W}_t + \frac{1}{2} (\bvec{f}_{t + 1} + \bvec{f}_t)
+\end{align*}
+
+\newpage
+
+\section{Godunov Splitting}
+
+Let us slightly rewrite the original system of equations:
+\begin{align*}
+    \chi C_\text{m} \frac{\partial v}{\partial t}
+        & = \nabla \cdot (\sigma_i \nabla (v + u_\text{e})) - \chi I_\text{ion}(v) + f \\
+    0
+        & = \nabla \cdot (\sigma_i \nabla (v + u_\text{e})) + \nabla \cdot (\sigma \nabla u_\text{e}) + f_\text{e}
+\end{align*}
+\noindent Which, after spatial discretization, has been written as:
+\begin{align*}
+    \bmat{M} \bvec{X} = \bmat{A} \bvec{W} + \bvec{f}
+\end{align*}
+\noindent Where $\bmat{M}$ is the mass matrix,
+$\bmat{A}$ is the stiffness matrix,
+$\bvec{f}$ is the stiffness right-hand side vector,
+$\bvec{W}$ is the solution state vector,
+and $\bvec{X}$ is the state vector for the solution's time derivative
+(which is typically written as $\bvec{X}_{t + 1} = \frac{1}{h}(\bvec{W}_{t + 1} - \bvec{W}_t)$).
+
+We split the right-hand side operator as follows:
+\begin{align*}
+    \bmat{M} \bvec{X} & = \bvec{f} \\
+    \bmat{M} \bvec{X} & = \bmat{A} \bvec{W}
+\end{align*}
+And, applying Backward Euler time stepping to each system, we get:
+\begin{align*}
+    \bmat{M} \bvec{X}_t^{(*)} & = \bvec{f}_{t + 1} \\
+    \bmat{M} \bvec{X}_{t + 1} & = \bvec{A} \bvec{W}_{t + 1}
+\end{align*}
+\noindent Substituting $\bvec{X}_t^{(*)} = \frac{1}{h} (\bvec{W}_t^{(*)} - \bvec{W}_t)$,
+we get:
+\begin{align*}
+    \frac{1}{h} \bmat{M} (\bvec{W}_t^{(*)} - \bvec{W}_t) & = \bvec{f}_{t + 1} \\
+    \frac{1}{h} \bmat{M} \bvec{W}_t^{(*)} & = \frac{1}{h} \bmat{M} \bvec{W}_t + \bvec{f}_{t + 1}
+\end{align*}
+\noindent And substituting $\bvec{X}_{t + 1} = \frac{1}{h} (\bvec{W}_{t + 1} - \bvec{W}_t^{(*)})$,
+we get:
+\begin{align*}
+    \frac{1}{h} \bmat{M} (\bvec{W}_{t + 1} - \bvec{W}_t^{(*)}) & = \bmat{A} \bvec{W}_{t + 1} \\
+    (\frac{1}{h} \bmat{M} - \bmat{A}) \bvec{W}_{t + 1} & = \frac{1}{h} \bmat{M} \bvec{W}_t^{(*)}
+\end{align*}
+\noindent So, our time stepping scheme is:
+\begin{align*}
+    \frac{1}{h} \bmat{M} \bvec{W}_t^{(*)} & = \frac{1}{h} \bmat{M} \bvec{W}_t + \bvec{f}_{t + 1} \\
+    (\frac{1}{h} \bmat{M} - \bmat{A}) \bvec{W}_{t + 1} & = \frac{1}{h} \bmat{M} \bvec{W}_t^{(*)}
+\end{align*}
+
+\end{document}

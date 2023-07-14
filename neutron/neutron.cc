@@ -53,7 +53,7 @@
 
 // Include our separated time-integration library
 // (has some overlap with deal.II/base/time_stepping.h)
-#include "tostii.h"
+#include <tostii/tostii.h>
 
 namespace Neutron {
 using namespace dealii;

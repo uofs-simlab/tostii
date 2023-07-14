@@ -1,0 +1,36 @@
+\documentclass{article}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+
+\newcommand{\bvec}[1]{\boldsymbol{#1}}
+\newcommand{\ii}{\mathrm{i}}
+
+\begin{document}
+
+\section{Introduction}
+
+Let $\Omega \subseteq \mathbb{R}^n$,
+$V : \mathbb{R}^n \rightarrow \mathbb{R}$,
+and $\kappa \in \mathbb{R}$.
+The Nonlinear Schroedinger Equation (NSE) is given by:
+
+\begin{equation}
+-\ii \frac{\partial \psi}{\partial t} - \frac{1}{2} \Delta \psi + V\psi + \kappa |\psi|^2 \psi = 0
+\end{equation}
+
+\noindent With initial conditions:
+
+\begin{equation}
+\psi(\bvec{x}, 0) = \psi_0(\bvec{x})
+\end{equation}
+
+\noindent For all $\bvec{x} \in \Omega$ and with boundary conditions:
+
+\begin{equation}
+\psi(\bvec{x}, t) = 0
+\end{equation}
+
+\noindent For all $\bvec{x}, t \in \partial \Omega \times (0, T)$.
+
+\end{document}

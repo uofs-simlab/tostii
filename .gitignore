@@ -1,0 +1,17 @@
+
+# cmake output files
+out/
+
+# latex output files
+*.aux
+*.dvi
+*.log
+*.pdf
+
+# solutions
+solution-*
+solution_*
+*.tar.gz
+
+# visual studio code files
+.vscode/

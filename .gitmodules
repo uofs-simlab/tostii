@@ -1,4 +1,0 @@
-[submodule "candi"]
-	path = candi
-	url = git@github.com:kevinrichardgreen/candi.git
-	branch = os-paper

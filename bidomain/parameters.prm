@@ -1,0 +1,42 @@
+
+subsection FEM Parameters
+  set Dimension value = 2
+
+  set Polynomial degree = 1
+
+  set Global refinement value = 4
+end
+
+subsection Time Stepping Parameters
+  set Number of time steps = 100
+
+  set Initial time step = 0
+  
+  set Final time value = 1.0
+
+  set Time stepping = Backward Euler
+end
+
+subsection Cell Parameters
+  set chi value = 200.0
+
+  set Cm value = 1.0e-2
+
+  set Rm value = 1.0e1
+
+  set sigmai value = 20.0e-1
+
+  set sigmae value = 5.0e-1
+end
+
+subsection Linear Solver Parameters
+  set Tolerance = 1e-6
+
+  set Max iteration multiplier = 578
+end
+
+subsection Output Parameters
+  set Number of pvtu files = 10
+
+  set Output prefix = ./solution
+end

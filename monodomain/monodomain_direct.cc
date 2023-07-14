@@ -137,7 +137,7 @@ using namespace dealii::LinearAlgebraTrilinos;
 #include "FitzHughNagumo1961EB2008.h"
 
 // Separated Timestepping
-#include "tostii.h"
+#include <tostii/tostii.h>
 
 #include <fstream>
 #include <iostream>

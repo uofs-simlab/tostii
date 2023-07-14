@@ -54,7 +54,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "tostii.h"
+#include <tostii/tostii.h>
 
 
 // Then the usual placing of all content of this program into a namespace and
