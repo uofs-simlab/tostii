@@ -4,33 +4,127 @@
 \usepackage{amsmath}
 
 \newcommand{\bvec}[1]{\boldsymbol{#1}}
+\newcommand{\brvec}[1]{\mathbf{#1}}
+\newcommand{\bmat}[1]{\boldsymbol{#1}}
+\newcommand{\brmat}[1]{\mathbf{#1}}
 \newcommand{\ii}{\mathrm{i}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\mathrm{d}}
 
 \begin{document}
 
 \section{Introduction}
 
 Let $\Omega \subseteq \mathbb{R}^n$,
-$V : \mathbb{R}^n \rightarrow \mathbb{R}$,
-and $\kappa \in \mathbb{R}$.
+$V : \Omega \rightarrow \mathbb{R}$,
+$\kappa \in \mathbb{R}$,
+and $\psi : (0, T) \times \Omega \rightarrow \mathbb{C}$.
 The Nonlinear Schroedinger Equation (NSE) is given by:
-
-\begin{equation}
--\ii \frac{\partial \psi}{\partial t} - \frac{1}{2} \Delta \psi + V\psi + \kappa |\psi|^2 \psi = 0
-\end{equation}
-
+\begin{align*}
+-\ii \frac{\partial \psi}{\partial t} - \frac{1}{2} \Delta \psi + V \psi + \kappa |\psi|^2 \psi = 0
+\end{align*}
 \noindent With initial conditions:
-
-\begin{equation}
-\psi(\bvec{x}, 0) = \psi_0(\bvec{x})
-\end{equation}
-
+\begin{align*}
+\psi(0, \bvec{x}) = \psi_0(\bvec{x})
+\end{align*}
 \noindent For all $\bvec{x} \in \Omega$ and with boundary conditions:
+\begin{align*}
+\psi(t, \bvec{x}) = 0
+\end{align*}
+\noindent For all (t, $\bvec{x}) \in (0, T) \times \partial \Omega$.
 
-\begin{equation}
-\psi(\bvec{x}, t) = 0
-\end{equation}
+Because $\psi$ is complex-valued, it is convenient to separate the equation into real and imaginary parts.
+If we take $\psi(t, \bvec{x}) = u(t, \bvec{x}) + \ii v(t, \bvec{x})$
+for $u, v : (0, T) \times \Omega \rightarrow \mathbb{R}$,
+we also have that $|\psi|^2 = u^2 + v^2$:
+\begin{align*}
+    -\ii \frac{\partial}{\partial t} (u + \ii v) - \frac{1}{2} \Delta (u + \ii v)
+            + V (u + \ii v) + \kappa (u^2 + v^2) (u + \ii v)
+        = 0
+\end{align*}
+\noindent So:
+\begin{align*}
+    \frac{\partial v}{\partial t} - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u & = 0 \\
+    -\frac{\partial u}{\partial t} - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v & = 0
+\end{align*}
 
-\noindent For all $\bvec{x}, t \in \partial \Omega \times (0, T)$.
+\newpage
+
+\section{Toy Problem}
+
+Let $\Omega = [-1, 1]^n$, and consider, for an example:
+\begin{align*}
+    u(t, \bvec{x}) & = \cos(\pi t) \prod_{i = 1}^n \cos(\pi x_i) \\
+    v(t, \bvec{x}) & = \sin(\pi t) \prod_{i = 1}^n \cos(\pi x_i)
+\end{align*}
+\noindent Then:
+\begin{align*}
+    u(0, \bvec{x}) & = \prod_{i = 1}^n \cos(\pi x_i) \\
+    v(0, \bvec{x}) & = 0
+\end{align*}
+
+We have that:
+\begin{align*}
+    u^2 + v^2
+        & = \cos^2(\pi t) \prod_{i = 1}^n \cos^2(\pi x_i)
+            + \sin^2(\pi t) \prod_{i = 1}^n \cos^2(\pi x_i) \\
+        & = (\cos^2(\pi t) + \sin^2(\pi t)) \prod_{i = 1}^n \cos^2(\pi x_i) \\
+        & = \prod_{i = 1}^n \cos^2(\pi x_i)
+\end{align*}
+\noindent Note that $u^2 + v^2$ is independent of $t$. So:
+
+Meanwhile:
+\begin{align*}
+    \frac{\partial u}{\partial x_k} & = -\pi \cos(\pi t) \sin(\pi x_k) \prod_{i \neq k} \cos(\pi x_i) \\
+    \frac{\partial^2 u}{\partial x_k^2} & = -\pi^2 \cos(\pi t) \prod_{i = 1}^n \cos(\pi x_i) \\
+        & = -\pi^2 u \\
+    \Delta u & = \sum_{k = 1}^n \frac{\partial^2 u}{\partial x_k^2} \\
+        & = -n \pi^2 u
+\end{align*}
+\noindent Similarly:
+\begin{align*}
+    \Delta v = -n \pi^2 v
+\end{align*}
+\noindent And:
+\begin{align*}
+    \frac{\partial u}{\partial t} & = -\pi \sin(\pi t) \prod_{i = 1}^n \cos(\pi x_i) \\
+        & = -\pi v \\
+    \frac{\partial v}{\partial t} & = \pi \cos(\pi t) \prod_{i = 1}^n \cos(\pi x_i) \\
+        & = \pi u
+\end{align*}
+
+Then, rewriting the first equation:
+\begin{align*}
+    V u & = -\frac{\partial v}{\partial t} + \frac{1}{2} \Delta u - \kappa (u^2 + v^2) u \\
+        & = -\pi u - \frac{n}{2} \pi^2 u - \kappa (u^2 + v^2) u \\
+    V(\bvec{x}) & = -\pi - \frac{n}{2} \pi^2 - \kappa (u^2 + v^2)
+\end{align*}
+\noindent And the second equation:
+\begin{align*}
+    V v & = \frac{\partial u}{\partial t} + \frac{1}{2} \Delta v - \kappa (u^2 + v^2) v \\
+        & = -\pi v - \frac{n}{2} \pi^2 v - \kappa (u^2 + v^2) v \\
+    V(\bvec{x}) & = -\pi - \frac{n}{2} \pi^2 - \kappa (u^2 + v^2)
+\end{align*}
+\noindent We see that the equations agree.
+
+\newpage
+
+\section{Spatial Discretization}
+
+Consider a set of basis function $\bvec{\Phi}_i : \Omega \rightarrow \mathbb{R}^2$,
+where each $\bvec{\Phi}_i(\bvec{x}) = \varphi_{b_i} \hat{\brvec{e}}_{c_i}$,
+where $\varphi_j : \Omega \rightarrow \mathbb{R}$ is a set of basis functions
+($b_i$ is the base index of the index $i$ and $c_i$ is the component index of $i$).
+We write $\bvec{w} = \begin{bmatrix}
+    u \\
+    v
+\end{bmatrix}$ and make the approximation $\bvec{w} = W_j \bvec{\Phi}_j$ (Einstein summation).
+Then, we multiply and integrate the system with a basis function $\bvec{\Phi}_i$:
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        \ii \frac{\partial v}{\partial t} - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u \\
+        -\ii \frac{\partial u}{\partial t} - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v
+    \end{matrix} \right> = 0
+\end{align*}
 
 \end{document}
