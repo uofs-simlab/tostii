@@ -6,7 +6,6 @@ out/
 *.aux
 *.dvi
 *.log
-*.pdf
 
 # solutions
 solution-*
