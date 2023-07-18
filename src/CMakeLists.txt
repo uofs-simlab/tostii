@@ -14,4 +14,6 @@ target_link_libraries(tostii
     tostii_time_stepping)
 
 install(TARGETS tostii
-    ARCHIVE LIBRARY RUNTIME)
+    DESTINATION "lib")
+
+set(TOSTII_INCLUDE_DIR "${TOSTII_INCLUDE_DIR}" PARENT_SCOPE)
