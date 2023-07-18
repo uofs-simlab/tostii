@@ -24,7 +24,7 @@ set(SOURCES
     "${INCLUDE_DIR}/operator_split_single.inl"
     "operator_split_single.cc")
 
-add_library(time_stepping STATIC ${SOURCES})
-deal_II_setup_target(time_stepping)
-target_include_directories(time_stepping PUBLIC
+add_library(tostii_time_stepping ${SOURCES})
+deal_II_setup_target(tostii_time_stepping)
+target_include_directories(tostii_time_stepping PUBLIC
     "${CMAKE_SOURCE_DIR}/include")
