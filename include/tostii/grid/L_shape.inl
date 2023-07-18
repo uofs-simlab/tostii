@@ -40,8 +40,8 @@ namespace tostii::GridGenerator
             switch (dim)
             {
             case 1:
-                points.reserve(2);
-                cells.reserve(1);
+                points.resize(2);
+                cells.resize(1);
 
                 /* corners */
 
@@ -58,8 +58,8 @@ namespace tostii::GridGenerator
 
                 break;
             case 2:
-                points.reserve(8);
-                cells.reserve(3);
+                points.resize(8);
+                cells.resize(3);
 
                 /* corners */
 
@@ -106,8 +106,8 @@ namespace tostii::GridGenerator
 
                 break;
             case 3:
-                points.reserve(26);
-                cells.reserve(7);
+                points.resize(26);
+                cells.resize(7);
 
                 /* corners */
 
@@ -266,7 +266,7 @@ namespace tostii::GridGenerator
                 case 1:
                     break;
                 case 2:
-                    boundaries.boundary_lines.reserve(8);
+                    boundaries.boundary_lines.resize(8);
 
                     /* x-boundaries */
 
@@ -298,7 +298,7 @@ namespace tostii::GridGenerator
 
                     break;
                 case 3:
-                    boundaries.boundary_quads.reserve(24);
+                    boundaries.boundary_quads.resize(24);
 
                     /* x-boundaries */
 
