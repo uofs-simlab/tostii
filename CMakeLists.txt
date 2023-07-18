@@ -30,7 +30,7 @@ if (NOT (${DEAL_II_WITH_UMFPACK}
         "which conflict with the requirements.")
 endif()
 
-deal_ii_initialize_cached_variables()
+deal_II_initialize_cached_variables()
 
 project(tostii-demo)
 
@@ -44,8 +44,7 @@ function(deal_II_executable target)
 endfunction()
 
 function(tostii_executable target)
-    deal_II_executable(${target}
-        ${ARGN})
+    deal_II_executable(${target} ${ARGN})
     target_include_directories(${target} PUBLIC
         "${CMAKE_SOURCE_DIR}/include")
     target_link_libraries(${target}
