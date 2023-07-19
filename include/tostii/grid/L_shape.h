@@ -20,8 +20,21 @@ namespace tostii::GridGenerator
     template<int dim, int spacedim>
     void hyper_L(
         dealii::Triangulation<dim, spacedim>& tria,
-        const double left = 0.,
+        const double left = -1.,
         const double right = 1.,
-        const unsigned int refinements = 0,
-        const bool colorize = false);
+        const bool colorize = false,
+        const unsigned int refinements = 0);
+
+    /**
+     * Creates a @p dim -dimension hyper rectangle spanned by $[p_1, p_2]$,
+     * missing the corner closest to $p_2$ ($2^-dim$ of the total volume).
+     * @p colorize and @p refinements are as with the above overload.
+     */
+    template<int dim, int spacedim>
+    void hyper_L(
+        dealii::Triangulation<dim, spacedim>& tria,
+        const dealii::Point<dim>& p_1,
+        const dealii::Point<dim>& p_2,
+        const bool colorize = false,
+        const unsigned int refinements = 0);
 }
