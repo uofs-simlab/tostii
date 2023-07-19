@@ -113,15 +113,15 @@ namespace tostii::GridGenerator
                     {
                         if (outer_boundary.is_element(face_index))
                         {
-                            face->set_boundary_id(1 << (2 * face_index / 2));
+                            face->set_boundary_id(1 << (2 * (face_index / 2)));
                         }
                         else if (near_center(face->center()))
                         {
-                            face->set_boundary_id(3 << (2 * face_index / 2));
+                            face->set_boundary_id(3 << (2 * (face_index / 2)));
                         }
                         else
                         {
-                            face->set_boundary_id(2 << (2 * face_index / 2));
+                            face->set_boundary_id(2 << (2 * (face_index / 2)));
                         }
                     }
                 }
