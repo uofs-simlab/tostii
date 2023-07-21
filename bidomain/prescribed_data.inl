@@ -16,6 +16,29 @@ namespace Bidomain::PrescribedData
     { }
 
     template<int dim>
+    double ExactSolution<dim>::value(
+        const Point<dim>& p,
+        const unsigned int component) const
+    {
+        (void)component;
+        AssertIndexRange(component, 2);
+
+        using std::cos, dealii::numbers::PI;
+        const double t = this->get_time();
+
+        double x = t * t * t;
+        for (unsigned int i = 0; i < dim; ++i)
+        {
+            x *= cos(PI * p[i]);
+        }
+        if (component == 0)
+        {
+            x *= -(sigmai + sigmae) / sigmai;
+        }
+        return x;
+    }
+
+    template<int dim>
     void ExactSolution<dim>::vector_value(
         const Point<dim>& p,
         Vector<double>& values) const

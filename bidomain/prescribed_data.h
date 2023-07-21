@@ -19,6 +19,10 @@ namespace Bidomain::PrescribedData
             const double initial_time,
             const Parameters::AllParameters& param);
         
+        double value(
+            const Point<dim>& p,
+            const unsigned int component = 0) const override;
+
         void vector_value(
             const Point<dim>& p,
             Vector<double>& values) const override;
