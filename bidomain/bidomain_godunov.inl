@@ -265,7 +265,7 @@ namespace Bidomain
         LA::SolverGMRES solver(solver_control, mpi_communicator);
 
         solver.solve(system_matrix, W, rhs, preconditioner);
-        constraints.distribute(solution);
+        constraints.distribute(W);
 
         pcout << "done in " << solver_control.last_step() << " iterations" << std::endl;
     }
@@ -339,7 +339,6 @@ namespace Bidomain
             ? param.n_time_steps / param.n_output_files
             : param.n_time_steps + 1;
 
-        /*
         using namespace tostii::TimeStepping;
 
         Exact<LA::MPI::Vector> membrane_stepper;
@@ -356,7 +355,23 @@ namespace Bidomain
                 LA::MPI::Vector& W) { this->assemble_membrane_rhs(t, tau, rhs, W); }
         };
 
+        /*
         LinearImplicitRungeKutta<LA::MPI::Vector> tissue_stepper(BACKWARD_EULER);
+        OSOperator<LA::MPI::Vector> tissue_operator = {
+            &tissue_stepper,
+            [](
+                const double,
+                const LA::MPI::Vector& W,
+                LA::MPI::Vector& rhs) { rhs = W; },
+            [this](
+                const double,
+                const double,
+                const LA::MPI::Vector& rhs,
+                LA::MPI::Vector& W) { this->solve_tissue_system(rhs, W); }
+        };
+        */
+
+        Exact<LA::MPI::Vector> tissue_stepper;
         OSOperator<LA::MPI::Vector> tissue_operator = {
             &tissue_stepper,
             [](
@@ -373,9 +388,8 @@ namespace Bidomain
         auto method = os_method<double>::GODUNOV;
         std::vector<OSOperator<LA::MPI::Vector>> operators = { membrane_operator, tissue_operator };
         OperatorSplitSingle<LA::MPI::Vector> stepper(operators, method, solution);
-        */
 
-        LA::MPI::Vector rhs(locally_owned_dofs, mpi_communicator);
+        // LA::MPI::Vector rhs(locally_owned_dofs, mpi_communicator);
 
         while (timestep_number < param.n_time_steps)
         {
@@ -385,13 +399,11 @@ namespace Bidomain
 
             pcout << "Time step " << timestep_number << ":" << std::endl;
 
-            assemble_membrane_rhs(time, time_step, solution, rhs);
-            solve_tissue_system(rhs, solution);
-            time += time_step;
+            // assemble_membrane_rhs(time, time_step, solution, rhs);
+            // solve_tissue_system(rhs, solution);
+            // time += time_step;
 
-            /*
             time = stepper.evolve_one_time_step(time, time_step, solution);
-            */
 
             compute_errors();
 
