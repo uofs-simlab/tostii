@@ -1,0 +1,52 @@
+\documentclass{article}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+
+\newcommand{\bvec}[1]{\boldsymbol{#1}}
+\newcommand{\brvec}[1]{\mathbf{#1}}
+\newcommand{\bmat}[1]{\boldsymbol{#1}}
+\newcommand{\brmat}[1]{\mathbf{#1}}
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\mathrm{d}}
+
+\begin{document}
+
+\section{Introduction}
+
+Consider a spatial domain $\Omega \subseteq \mathbb{R}^n$
+and a time domain $(0, T)$ for some $T \in \mathbb{R}$.
+The well-known heat equation is given as:
+\begin{align*}
+    \frac{\partial u}{\partial t} = \Delta u + f
+\end{align*}
+\noindent Where $u, f : (0, T) \times \Omega \rightarrow \mathbb{R}$,
+with initial conditions:
+\begin{align*}
+    u(0, \bvec{x}) = u_0(\bvec{x})
+\end{align*}
+\noindent For all $\bvec{x} \in \Omega$.
+We may pose Dirichlet boundary conditions of the form:
+\begin{align*}
+    u(t, \bvec{x}) = g(t, \bvec{x})
+\end{align*}
+\noindent Or we may pose Neumann boundary conditions of the form:
+\begin{align*}
+    \hat{\brvec{n}} \cdot \nabla u = h(t, \bvec{x})
+\end{align*}
+\noindent For all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$.
+
+We will be considering the case of a square L-shaped domain in $\mathbb{R}^n$,
+i.e., a domain of the form $[-1, 1]^n \setminus [0, 1]^n$.
+This is a hyper-cube domain missing the hyper-cube around the "rightmost"
+(i.e., most positive in each repective dimension) corner.
+Furthermore, we will split the domain into interior and exterior sections
+and split the heat equation operator, treating the two sections separately.
+
+\newpage
+\section{Domain Splitting}
+
+
+
+\end{document}
