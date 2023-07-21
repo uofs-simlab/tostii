@@ -38,15 +38,59 @@ We may pose Dirichlet boundary conditions of the form:
 \noindent For all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$.
 
 We will be considering the case of a square L-shaped domain in $\mathbb{R}^n$,
-i.e., a domain of the form $[-1, 1]^n \setminus [0, 1]^n$.
+i.e., a domain of the form $\Omega = (-1, 1)^n \setminus (0, 1)^n$.
 This is a hyper-cube domain missing the hyper-cube around the "rightmost"
 (i.e., most positive in each repective dimension) corner.
-Furthermore, we will split the domain into interior and exterior sections
-and split the heat equation operator, treating the two sections separately.
+Our heat source $f$ will be located at the center of the domain;
+furthermore, we will split the domain into interior and exterior sections
+and split the heat operator, treating the two sections separately.
 
 \newpage
 \section{Domain Splitting}
 
+We split the domain $\Omega$ into interior and exterior sections; repectively:
+\begin{align*}
+    \Omega_\text{I} & = (-1/2, 1/2)^n \setminus (0, 1/2)^n \\
+    \Omega_\text{E} & = \Omega \setminus \overline{\Omega}_\text{I}
+\end{align*}
+\noindent We see that $\Omega_\text{I}$ is itself an L-shaped domain,
+and $\Omega_\text{E}$ is the shell around it.
+When we consider the heat operator separately on these two sections,
+we must consider the boundary $\Gamma_\text{I} = \partial \Omega_\text{I}$ which separates them.
+Clearly, we must have, for all fixed $t \in (0, T)$ and $\bvec{x} \in \partial \Omega_\text{I}$:
+\begin{align*}
+    \lim_{\Omega_\text{I} \ni \bvec{\xi} \rightarrow \bvec{x}} u(t, \bvec{\xi})
+        & = \lim_{\Omega_\text{E} \ni \bvec{\xi} \rightarrow \bvec{x}} u(t, \bvec{\xi}) \\
+    \lim_{\Omega_\text{I} \ni \bvec{\xi} \rightarrow \bvec{x}} \hat{\brvec{n}} \cdot \nabla u(t, \bvec{\xi})
+        & = -\lim_{\Omega_\text{E} \ni \bvec{\xi} \rightarrow \bvec{x}} \hat{\brvec{n}} \cdot \nabla u(t, \bvec{\xi})
+\end{align*}
 
+\newpage
+\section{Spatial Discretization}
+
+For a fixed time $t \in (0, T)$,
+we make the approximation $u = U_j \varphi_j$ (Einstein summation)
+for a set of basis functions $\varphi_j : \Omega \rightarrow \mathbb{R}$;
+similarly, we write $\frac{\partial u}{\partial t} = X_j \varphi_j$.
+So, the original equation becomes:
+\begin{align*}
+    X_j \varphi_j = U_j \Delta \varphi_j + f
+\end{align*}
+\noindent We multiply by a test function $\varphi_i$ and integrate:
+\begin{align*}
+    X_j \left< \varphi_i \mid \varphi_j \right>
+        = U_j \left< \varphi_i \mid \Delta \varphi_j \right>
+            + \left< \varphi_i \mid f \right>
+\end{align*}
+
+Consider:
+\begin{align*}
+    \left< \varphi_i \mid \Delta \varphi_j \right>
+        & = \int_\Omega \varphi_i \Delta \varphi_j \, \dd \bvec{x} \\
+        & = \oint_{\partial \Omega} \varphi_i \hat{\brvec{n}} \cdot \nabla \varphi_j \, \dd \bvec{s}
+            - \int_\Omega \nabla \varphi_i \cdot \nabla \varphi_j \, \dd \bvec{x} \\
+        & = \left< \varphi_i \mid \hat{\brvec{n}} \cdot \nabla \varphi_j \right>_{\partial \Omega}
+            - \left< \nabla \varphi_i \mid \nabla \varphi_j \right>
+\end{align*}
 
 \end{document}
