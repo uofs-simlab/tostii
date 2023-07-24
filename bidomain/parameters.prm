@@ -4,11 +4,11 @@ subsection FEM Parameters
 
   set Polynomial degree = 1
 
-  set Global refinement value = 4
+  set Global refinement value = 6
 end
 
 subsection Time Stepping Parameters
-  set Number of time steps = 100
+  set Number of time steps = 300
 
   set Initial time step = 0
   
@@ -30,7 +30,7 @@ subsection Cell Parameters
 end
 
 subsection Linear Solver Parameters
-  set Tolerance = 1e-6
+  set Tolerance = 1e-9
 
   set Max iteration multiplier = 578
 end

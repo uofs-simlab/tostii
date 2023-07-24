@@ -185,7 +185,7 @@ namespace Bidomain
         pcout << "\tAssembling RHS... " << std::flush;
 
         PrescribedData::TransmembraneRightHandSide<dim> transmembrane_rhs(t + tau, param);
-        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs;
+        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs(t + tau, param);
 
         rhs = 0.;
 

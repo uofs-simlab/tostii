@@ -118,7 +118,7 @@ namespace Bidomain
         LA::MPI::Vector& res)
     {
         PrescribedData::TransmembraneRightHandSide<dim> transmembrane_rhs(time, param);
-        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs;
+        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs(time, param);
 
         fe_v.reinit(cell);
         cell->get_dof_indices(local_dof_indices);
@@ -198,7 +198,7 @@ namespace Bidomain
 
                 if (c_i == 0)
                 {
-                    R_i += param.chi * param.Cm
+                    R_i += param.chi * param.Cm / time_step
                          * fe_v.shape_value_component(i, q, c_i)
                          * (w[q][c_i] - w_old[q][c_i])
                          * JxW;
@@ -206,7 +206,7 @@ namespace Bidomain
 
                 if (c_i == 0)
                 {
-                    R_i += time_step * param.chi / param.Rm
+                    R_i += param.chi / param.Rm
                          * fe_v.shape_value_component(i, q, c_i)
                          * w[q][c_i]
                          * JxW;
@@ -214,7 +214,7 @@ namespace Bidomain
 
                 for (unsigned int d = 0; d < dim; ++d)
                 {
-                    R_i += time_step * param.sigmai
+                    R_i += param.sigmai
                          * fe_v.shape_grad_component(i, q, c_i)[d]
                          * grad_w[q][c_i][d]
                          * JxW;
@@ -224,14 +224,14 @@ namespace Bidomain
                 {
                     for (unsigned int d = 0; d < dim; ++d)
                     {
-                        R_i += time_step * param.sigmae
+                        R_i += param.sigmae
                              * fe_v.shape_grad_component(i, q, c_i)[d]
                              * grad_w[q][c_i][d]
                              * JxW;
                     }
                 }
 
-                R_i -= time_step
+                R_i -= 1.
                      * fe_v.shape_value_component(i, q, c_i)
                      * rhs[q][c_i]
                      * JxW;
@@ -289,7 +289,7 @@ namespace Bidomain
     {
         PrescribedData::ExactSolution<dim> exact_solution_old(time - time_step, param);
         PrescribedData::TransmembraneRightHandSide<dim> transmembrane_rhs(time, param);
-        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs;
+        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs(time, param);
 
         fe_v.reinit(cell);
         cell->get_dof_indices(local_dof_indices);
@@ -513,10 +513,6 @@ namespace Bidomain
 
             LA::MPI::Vector pres(this->locally_owned_dofs, this->mpi_communicator);
             this->prescribed_residual(pres);
-
-            std::ofstream out;
-            out.open("errors.txt", out.app);
-            pres.print(out);
 
             return 0;
         };

@@ -182,8 +182,8 @@ namespace Bidomain
             transmembrane_rhs(time, param),
             old_transmembrane_rhs(time - time_step, param);
         PrescribedData::ExtracellularRightHandSide<dim>
-            extracellular_rhs,
-            old_extracellular_rhs;
+            extracellular_rhs(time, param),
+            old_extracellular_rhs(time - time_step, param);
 
         system_rhs = 0.;
 
