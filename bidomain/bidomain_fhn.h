@@ -35,17 +35,36 @@ namespace Bidomain
     {
     public:
         BidomainProblem(const Parameters::AllParameters& param);
-
+        
         void run();
 
     private:
         void setup_system();
         void assemble_system();
-        void assemble_rhs();
-        void solve_time_step();
-        void compute_errors() const;
-        void output_results() const;
-
+        void solve_monolithic_step(
+            const double t,
+            const double tau,
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out);
+        void assemble_membrane_rhs(
+            const double t,
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out);
+        void solve_membrane_lhs(
+            const double t,
+            const double tau,
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out);
+        void assemble_tissue_rhs(
+            const double t,
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out);
+        void solve_tissue_lhs(
+            const double t,
+            const double tau,
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out);
+        
         const Parameters::AllParameters param;
 
         MPI_Comm mpi_communicator;
@@ -64,18 +83,14 @@ namespace Bidomain
 
         AffineConstraints<double> constraints;
 
-        LA::MPI::Vector old_solution;
         LA::MPI::Vector solution;
-        LA::MPI::Vector system_rhs;
 
         SparsityPattern sparsity_pattern;
-        LA::MPI::SparseMatrix system_matrix;
-        LA::MPI::SparseMatrix rhs_matrix;
+        LA::MPI::SparseMatrix mass_matrix;
+        LA::MPI::SparseMatrix tissue_matrix;
 
         unsigned int timestep_number;
         const double time_step;
         double time;
-
-        const double theta;
     };
 }
