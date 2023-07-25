@@ -25,7 +25,8 @@ endif()
 
 deal_II_initialize_cached_variables()
 
-project(tostii-demo)
+project(tostii
+    VERSION 0.0.0)
 
 add_subdirectory("cmake")
 add_subdirectory("src")
