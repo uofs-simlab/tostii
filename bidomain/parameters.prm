@@ -22,11 +22,21 @@ subsection Cell Parameters
 
   set Cm value = 1.0e-2
 
-  set Rm value = 1.0e1
-
   set sigmai value = 20.0e-1
 
   set sigmae value = 5.0e-1
+
+  subsection Passive Cell Model
+    set Rm value = 1.0e1
+  end
+
+  subsection FitzHugh-Nagumo Cell Model
+    set epsilon value = 0.1
+
+    set beta value = 1.0
+
+    set gamma value = 0.5
+  end
 end
 
 subsection Linear Solver Parameters

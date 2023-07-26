@@ -136,7 +136,7 @@ namespace Bidomain
                                     * fe_v.shape_value_component(j, q, c_j)
                                     * JxW;
                                 
-                                A_ij -= param.chi / param.Rm
+                                A_ij -= param.chi / param.passive.Rm
                                     * fe_v.shape_value_component(i, q, c_i)
                                     * fe_v.shape_value_component(j, q, c_j)
                                     * JxW;

@@ -64,7 +64,7 @@ namespace Bidomain::PrescribedData
         : Function<dim>(1, initial_time)
         , chi(param.chi)
         , Cm(param.Cm)
-        , Rm(param.Rm)
+        , Rm(param.passive.Rm)
         , sigmai(param.sigmai)
         , sigmae(param.sigmae)
     { }

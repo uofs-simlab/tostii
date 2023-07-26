@@ -139,6 +139,62 @@ namespace Bidomain::Parameters
         prm.leave_subsection();
     }
 
+    void PassiveParameters::declare_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("Passive Cell Model");
+
+        prm.declare_entry(
+            "Rm value",
+            "1e0",
+            Patterns::Double(),
+            "Resistance");
+
+        prm.leave_subsection();
+    }
+
+    void PassiveParameters::parse_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("Passive Cell Model");
+
+        Rm = prm.get_double("Rm value");
+
+        prm.leave_subsection();
+    }
+
+    void FHNParameters::declare_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("FitzHugh-Nagumo Cell Model");
+
+        prm.declare_entry(
+            "epsilon value",
+            "0.1",
+            Patterns::Double(),
+            "FitzHugh-Nagumo epsilon");
+        prm.declare_entry(
+            "beta value",
+            "1.0",
+            Patterns::Double(),
+            "FitzHugh-Nagumo beta");
+        prm.declare_entry(
+            "gamma value",
+            "0.5",
+            Patterns::Double(),
+            "FitzHugh-Nagumo gamma");
+
+        prm.leave_subsection();
+    }
+
+    void FHNParameters::parse_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("FitzHugh-Nagumo Cell Model");
+
+        epsilon = prm.get_double("epsilon value");
+        beta = prm.get_double("beta value");
+        gamma = prm.get_double("gamma value");
+
+        prm.leave_subsection();
+    }
+
     void CellParameters::declare_parameters(ParameterHandler& prm)
     {
         prm.enter_subsection("Cell Parameters");
@@ -154,11 +210,6 @@ namespace Bidomain::Parameters
             Patterns::Double(),
             "Capacitance");
         prm.declare_entry(
-            "Rm value",
-            "1e0",
-            Patterns::Double(),
-            "Resistance");
-        prm.declare_entry(
             "sigmai value",
             "1e0",
             Patterns::Double(),
@@ -169,6 +220,9 @@ namespace Bidomain::Parameters
             Patterns::Double(),
             "Extracellular active conductivity");
 
+        PassiveParameters::declare_parameters(prm);
+        FHNParameters::declare_parameters(prm);
+
         prm.leave_subsection();
     }
 
@@ -178,9 +232,11 @@ namespace Bidomain::Parameters
 
         chi = prm.get_double("chi value");
         Cm = prm.get_double("Cm value");
-        Rm = prm.get_double("Rm value");
         sigmai = prm.get_double("sigmai value");
         sigmae = prm.get_double("sigmae value");
+
+        passive.parse_parameters(prm);
+        fhn.declare_parameters(prm);
 
         prm.leave_subsection();
     }

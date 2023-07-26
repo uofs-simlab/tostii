@@ -206,7 +206,7 @@ namespace Bidomain
 
                 if (c_i == 0)
                 {
-                    R_i += param.chi / param.Rm
+                    R_i += param.chi / param.passive.Rm
                          * fe_v.shape_value_component(i, q, c_i)
                          * w[q][c_i]
                          * JxW;
@@ -368,7 +368,7 @@ namespace Bidomain
 
                 if (c_i == 0)
                 {
-                    R_i += time_step * param.chi / param.Rm
+                    R_i += time_step * param.chi / param.passive.Rm
                          * fe_v.shape_value_component(i, q, c_i)
                          * w[q][c_i]
                          * JxW;

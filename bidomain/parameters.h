@@ -53,14 +53,33 @@ namespace Bidomain::Parameters
         void parse_parameters(ParameterHandler& prm);
     };
 
+    struct PassiveParameters
+    {
+        double Rm;
+
+        static void declare_parameters(ParameterHandler& prm);
+        void parse_parameters(ParameterHandler& prm);
+    };
+
+    struct FHNParameters
+    {
+        double epsilon;
+        double beta;
+        double gamma;
+
+        static void declare_parameters(ParameterHandler& prm);
+        void parse_parameters(ParameterHandler& prm);
+    };
+
     struct CellParameters
     {
         double chi;
         double Cm;
-        double Rm;
         double sigmai;
         double sigmae;
-        
+        PassiveParameters passive;
+        FHNParameters fhn;
+
         static void declare_parameters(ParameterHandler& prm);
         void parse_parameters(ParameterHandler& prm);
     };
