@@ -1,0 +1,207 @@
+\documentclass{article}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+
+\newcommand{\bvec}[1]{\boldsymbol{#1}}
+\newcommand{\brvec}[1]{\mathbf{#1}}
+\newcommand{\bmat}[1]{\boldsymbol{#1}}
+\newcommand{\brmat}[1]{\mathbf{#1}}
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\mathrm{d}}
+
+\begin{document}
+
+\section{Introduction}
+
+We consider the Bidomain equations:
+\begin{align*}
+    \chi C_\text{m} \frac{\partial v}{\partial t}
+            + \chi (I_\text{ion}(v) + I_\text{stim})
+        & = \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+    0
+        & = \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e}))
+            + \nabla \cdot (\sigma_\text{e} \nabla u_\text{e})
+\end{align*}
+\noindent We will be considering Neumann boundary conditions only.
+The domain is $\Omega = [0, 1]^n$.
+
+We introduce a new state variable $w$,
+and the FitzHugh-Nagumo cell model:
+\begin{align*}
+    I_\text{ion}(v, w)
+        & = \varepsilon^{-1} (v - \frac{v^3}{3} - w) \\
+    \frac{\partial w}{\partial t}
+        & = \varepsilon (v + \beta - \gamma w)
+\end{align*}
+\noindent When we add this cell model into the original equations,
+we have the new system:
+\begin{align*}
+    \chi C_\text{m} \frac{\partial v}{\partial t}
+            + \chi \varepsilon^{-1} (v - \frac{v^3}{3} - w)
+            + \chi I_\text{stim}
+        & = \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+    \frac{\partial w}{\partial t}
+        & = \varepsilon (v + \beta - \gamma w) \\
+    0
+        & = \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e}))
+            + \nabla \cdot (\sigma_\text{e} \nabla u_\text{e})
+\end{align*}
+\noindent We will be splitting the above system of equations into an explicit operator
+involving $I_\text{ion}$ and $I_\text{stim}$:
+\begin{align*}
+    \chi C_\text{m} \frac{\partial v}{\partial t}
+            + \chi \varepsilon^{-1} (v - \frac{v^3}{3} - w)
+            + \chi I_\text{stim}
+        & = 0 \\
+    \frac{\partial w}{\partial t}
+        & = \varepsilon (v + \beta - \gamma w) \\
+    0 & = 0
+\end{align*}
+\noindent And an implicit operator involving the Laplacian terms:
+\begin{align*}
+    \chi C_\text{m} \frac{\partial v}{\partial t}
+        & = \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+    \frac{\partial w}{\partial t} & = 0 \\
+    0
+        & = \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e}))
+            + \nabla \cdot (\sigma_\text{e} \nabla u_\text{e})
+\end{align*}
+
+\newpage
+\section{Spatial Discretization}
+
+Consider the monolithic system of equations,
+and let $\bvec{q} = \begin{bmatrix}
+    v \\
+    w \\
+    u_\text{e}
+\end{bmatrix}$.
+We consider a set of basis functions $\bvec{\Phi}_i : \Omega \rightarrow \mathbb{R}^3$,
+where each $\bvec{\Phi}_i = \varphi_{b_i} \hat{\brvec{e}}_{c_i}$
+for some basis functions $\varphi_i : \Omega \rightarrow \mathbb{R}$.
+We make the approximation $\bvec{q} = Q_j \bvec{\Phi}_j$ (Einstein summation)
+for a vector $\bvec{Q} \in \mathbb{R}^N$, where $N$ is the number of degrees of freedom.
+Also, we approximate $\frac{\partial \bvec{q}}{\partial t} = \dot{Q}_j \bvec{\Phi}_j$.
+We multiply the monolithic system of equations by a test function $\bvec{\Phi}_i$ and integrate:
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \chi C_\text{m} \partial_t v \\
+            \partial_t w \\
+            0
+        \end{matrix} \right>
+        & = \left< \bvec{\Phi}_i \mid \begin{matrix}
+                -\chi \varepsilon^{-1} (v - \frac{v^3}{3} - w)
+                    - \chi I_\text{stim} \\
+                \varepsilon (v + \beta - \gamma w) \\
+                0
+            \end{matrix} \right> \\
+        \qquad & + \left< \bvec{\Phi}_i \mid \begin{matrix}
+                \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+                0 \\
+                \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e}))
+                    + \nabla \cdot (\sigma_\text{e} \nabla u_\text{e})
+            \end{matrix} \right>
+\end{align*}
+\noindent Using the fact that $v = Q_j \varphi_{b_j} \delta_{1, c_j}$,
+$w = Q_j \varphi_{b_j} \delta_{2, c_j}$,
+and $u_\text{e} = Q_j \varphi_{b_j} \delta_{3, c_j}$,
+as well as $\frac{\partial v}{\partial t} = \dot{Q}_j \varphi{b}_j \delta_{1, c_j}$
+and $\frac{\partial w}{\partial t} = \dot{Q}_j \varphi_{b_j} \delta_{2, c_j}$,
+we consider each of the forms above:
+\begin{align*}
+    & \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \chi C_\text{m} \partial_t v \\
+            \partial_t w \\
+            0
+        \end{matrix} \right> \\
+    & \qquad = \delta_{1, c_i} \left< \varphi_{b_i} \mid \chi C_\text{m} \partial_t v \right>
+        + \delta_{2, c_i} \left< \varphi_{b_i} \mid \partial_t w \right> \\
+    & \qquad = \chi C_\text{m} \delta_{1, c_i} \delta_{1, c_j} \left< \varphi_{b_i} \mid \dot{Q}_j \varphi_{b_j} \right>
+        + \delta_{2, c_i} \delta_{2, c_j} \left< \varphi_{b_i} \mid \dot{Q}_j \varphi_{b_j} \right> \\
+    & \qquad = (\chi C_\text{m} \delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \dot{Q}_j
+\end{align*}
+\begin{align*}
+    & \left< \bvec{\Phi}_i \mid \begin{matrix}
+            -\chi \varepsilon^{-1} (v - \frac{v^3}{3} - w)
+                - \chi I_\text{stim} \\
+            \varepsilon (v + \beta - \gamma w) \\
+            0
+        \end{matrix} \right> \\
+    & \qquad = \delta_{1, c_i} \left< \varphi_{b_i} \mid -\chi \varepsilon^{-1} (v - \frac{v^3}{3} - w)
+        - \chi I_\text{stim} \right>
+        + \delta_{2, c_i} \left< \varphi_{b_i} \mid \varepsilon (v + \beta - \gamma w) \right> \\
+    & \qquad = (-\chi \varepsilon^{-1} \delta_{1, c_i} + \varepsilon \delta_{2, c_i})
+            \left< \varphi_{b_i} \mid v \right>
+        + (\chi \varepsilon^{-1} \delta_{1, c_i} - \varepsilon \gamma \delta_{2, c_i})
+            \left< \varphi_{b_i} \mid w \right> \\
+        & \qquad \qquad + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
+            \left< \varphi_{b_i} \mid v^3 \right>
+        - \chi \delta_{1, c_i} \left< \varphi_{b_i} \mid I_\text{stim} \right>
+        + \varepsilon \beta \delta_{2, c_i} \left< \varphi_{b_i} \mid 1 \right> \\
+    & \qquad = (-\chi \varepsilon^{-1} \delta_{1, c_i} + \varepsilon \delta_{2, c_i}) \delta_{1, c_j}
+            \left< \varphi_{b_i} \mid Q_j \varphi_{b_j} \right>
+        + (\chi \varepsilon^{-1} \delta_{1, c_i} - \varepsilon \gamma \delta_{2, c_i}) \delta_{2, c_j}
+            \left< \varphi_{b_i} \mid Q_j \varphi_{b_j} \right> \\
+        & \qquad \qquad + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
+            \left< \varphi_{b_i} \mid v^3 \right>
+        - \chi \delta_{1, c_i} \left< \varphi_{b_i} \mid I_\text{stim} \right>
+        + \varepsilon \beta \delta_{2, c_i} \left< \varphi_{b_i} \mid 1 \right> \\
+    & \qquad = (-\chi \varepsilon^{-1} \delta_{1, c_i} \delta_{1, c_j} + \varepsilon \delta_{2, c_i} \delta_{1, c_j}
+                + \chi \varepsilon^{-1} \delta_{1, c_i} \delta_{2, c_j} - \varepsilon \gamma \delta_{2, c_i} \delta_{2, c_j})
+            \left< \varphi_{b_i} \mid \varphi_{b_j} \right> Q_j \\
+        & \qquad \qquad + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
+            \left< \varphi_{b_i} \mid v^3 \right>
+        - \chi \delta_{1, c_i} \left< \varphi_{b_i} \mid I_\text{stim} \right>
+        + \varepsilon \beta \delta_{2, c_i} \left< \varphi_{b_i} \mid 1 \right>
+\end{align*}
+\begin{align*}
+    & \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+            0 \\
+            \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e}))
+                + \nabla \cdot (\sigma_\text{e} \nabla u_\text{e})
+        \end{matrix} \right> \\
+    & \qquad = \delta_{\{1,3\}, c_i} \left< \varphi_{b_i} \mid \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \right>
+        + \delta_{3, c_i} \left< \varphi_{b_i} \mid \nabla \cdot (\sigma_\text{e} \nabla u_\text{e}) \right> \\
+    & \qquad = -\delta_{\{1,3\}, c_i} \left< \nabla \varphi_{b_i} \mid \sigma_i \nabla (v + u_\text{e}) \right>
+        - \delta_{3, c_i} \left< \nabla \varphi_{b_i} \mid \sigma_\text{e} \nabla u_\text{e} \right> \\
+    & \qquad = -\sigma_\text{i} \delta_{\{1,3\}, c_i}
+            \left< \nabla \varphi_{b_i} \mid \nabla (Q_j \varphi_{b_j} \delta_{\{1,3\}, c_j}) \right>
+        - \sigma_\text{e} \delta_{3, c_i} \left< \nabla \varphi_{b_i} \mid \nabla (Q_j \varphi_{b_j} \delta_{3, c_j}) \right> \\
+    & \qquad = -(\sigma_\text{i} \delta_{\{1,3\}, c_i} \delta_{\{1,3\}, c_j} + \sigma_\text{e} \delta_{3, c_i} \delta_{3, c_j})
+            \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> Q_j
+\end{align*}
+\noindent So, define:
+\begin{align*}
+    M_{ij} & = (\chi C_\text{m} \delta_{1, c_i} \delta_{1,c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \\
+    A_{ij} & = (-\chi \varepsilon^{-1} \delta_{1, c_i} \delta_{1, c_j} + \varepsilon \delta_{2, c_i} \delta_{1, c_j}
+            + \chi \varepsilon^{-1} \delta_{1, c_i} \delta_{2, c_j} - \varepsilon \gamma \delta_{2, c_i} \delta_{2, c_j})
+        \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \\
+    f_i & = -\chi \delta_{1, c_i} \left< \varphi_{b_i} \mid I_\text{stim} \right>
+        + \varepsilon \beta \delta_{2, c_i} \left< \varphi_{b_i} \mid 1 \right> \\
+    B_{ij} & = -(\sigma_\text{i} \delta_{\{1,3\}, c_i} \delta_{\{1,3\}, c_j} + \sigma_\text{e} \delta_{3, c_i} \delta_{3, c_j})
+        \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right>
+\end{align*}
+\noindent Then, we rewrite the monolithic equation as:
+\begin{align*}
+    \bmat{M} \dot{\bvec{Q}}
+        = \bmat{A} \bvec{Q}
+            + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i} \left< \varphi_{b_i} \mid v^3 \right>
+            + \bvec{f}
+            + \bmat{B} \bvec{Q}
+\end{align*}
+\noindent And, the split equations become:
+\begin{align*}
+    \bmat{M} \dot{\bvec{Q}}
+        & = \bmat{A} \bvec{Q}
+            + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i} \left< \varphi_{b_i} \mid v^3 \right>
+            + \bvec{f} \\
+    \bmat{M} \dot{\bvec{Q}}
+        & = \bmat{B} \bvec{Q}
+\end{align*}
+
+\end{document}
