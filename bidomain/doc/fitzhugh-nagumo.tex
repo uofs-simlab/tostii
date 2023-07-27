@@ -2,6 +2,7 @@
 
 \usepackage{amsfonts}
 \usepackage{amsmath}
+\usepackage{mathrsfs}
 
 \newcommand{\bvec}[1]{\boldsymbol{#1}}
 \newcommand{\brvec}[1]{\mathbf{#1}}
@@ -202,6 +203,85 @@ we consider each of the forms above:
             + \bvec{f} \\
     \bmat{M} \dot{\bvec{Q}}
         & = \bmat{B} \bvec{Q}
+\end{align*}
+
+\newpage
+\section{Time Integration}
+
+As a DAE, complications arise when integrating the Bidomain equations
+because the mass matrix is singular.
+Our goal is to solve the first ("explicit") equation using an explicit method such as Forward Euler;
+we solve the second ("implicit") equation using an implicit method such as Backward Euler.
+
+Recall that matrix form of the explicit equation from the previous section:
+\begin{align*}
+    \bmat{M} \dot{\bvec{Q}}
+        = \bmat{A} \bvec{Q}
+            + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
+                \left< \varphi_{b_i} \mid v^3 \right>
+            + \bvec{f}
+\end{align*}
+\noindent To integrate this system, we write the equation as:
+\begin{align*}
+    \dot{\bvec{Q}}
+        & = \bvec{F}_\text{E}(t, \bvec{Q}) \\
+        & = \bmat{M}^{-1}
+            (\bmat{A} \bvec{Q}
+                + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
+                    \left< \varphi_{b_i} \mid v^3 \right>
+                + \bvec{f})
+\end{align*}
+\noindent The solution $\bvec{Q}_{t + 1}$ at time step $t + 1$
+is then given by $\bvec{Q}_t$ plus a weighted sum of stages
+$\bvec{F}_\text{E}(t^{(i)}, \bvec{Q}_t^{(i)})$,
+where each $\bvec{Q}_t^{(i)}$ is itself a weighted sum of previously computed stages.
+However, $\bmat{M}$ is singular
+(because no time derivatives of $u_\text{e}$ appear in the Bidomain equations),
+and all components of the explicit equation's right-hand side are zero
+(because the operator has been split such that the explicit equation does not involve $u_\text{e}$).
+
+Denote the set of all DoF indices by $\mathcal{I} = [0, N)$.
+Then, let $\mathcal{J} = \{\, i \in \mathcal{I} \mid c_i \in \{\,1, 2\,\} \,\}$
+be the set of indices corresponding to the components $v$ and $w$. Then:
+\begin{align*}
+    \bmat{M}_\mathcal{J} \dot{\bvec{Q}}_\mathcal{J}
+        = \bmat{A}_\mathcal{J} \bvec{Q}_\mathcal{J}
+            + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
+                \left< \varphi_{b_i} \mid v^3 \right>
+            + \bvec{f}_\mathcal{J}
+\end{align*}
+\noindent Where a matrix or vector subscripted with $\mathcal{J}$
+denotes that only those elements with indices in $\mathcal{J}$ are included.
+Because there are no longer elements corresponding to the $u_\text{e}$ component
+of the system, $\bmat{M}_\mathcal{J}$ is non-singular, and we may write:
+\begin{align*}
+    \bvec{F}_\text{E}(t, \bvec{Q}_\mathcal{J})
+        = \bmat{M}_\mathcal{J}^{-1}
+            (\bmat{A}_\mathcal{J} \bvec{Q}_\mathcal{J}
+                + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
+                    \left< \varphi_{b_i} \mid v^3 \right>
+                + \bvec{f}_\mathcal{J})
+\end{align*}
+
+Now, we recall the matrix form of the implicit equation:
+\begin{align*}
+    \bmat{M} \dot{\bvec{Q}} = \bmat{B} \bvec{Q}
+\end{align*}
+Rather than formulating the solution of each time step as a sum of terms,
+we shall derive an explicit equation that can be solved,
+corresponding to the Backward Euler and Crank Nicolson methods.
+First, we again rearrange the equation:
+\begin{align*}
+    \dot{\bvec{Q}}
+        & = \bvec{F}_\text{I}(t, \bvec{Q}) \\
+        & = \bmat{M}^{-1} \bmat{B} \bvec{Q}
+\end{align*}
+\noindent For Backward Euler:
+\begin{align*}
+    \bvec{Q}_{t + 1} & = \bvec{Q}_t + h \bvec{F}_\text{I}(t + h, \bvec{Q}_{t + 1}) \\
+    \bvec{Q}_{t + 1} - \bvec{Q}_t & = h \bmat{M}^{-1} \bmat{B} \bvec{Q}_{t + 1} \\
+    \bmat{M} (\bvec{Q}_{t + 1} - \bvec{Q}_t) & = h \bmat{B} \bvec{Q}_{t + 1} \\
+    (\bmat{M} - h \bmat{B}) \bvec{Q}_{t + 1} & = \bmat{M} \bvec{Q}_t
 \end{align*}
 
 \end{document}
