@@ -1,10 +1,10 @@
 
-deal_II_executable(bidomain
+tostii_executable(bidomain
     "parameters.cc" "parameters.h"
     "prescribed_data.cc" "prescribed_data.inl" "prescribed_data.h"
     "bidomain.cc" "bidomain.inl" "bidomain.h")
 
-deal_II_executable(bidomain_2
+tostii_executable(bidomain_2
     "parameters.cc" "parameters.h"
     "prescribed_data_2.cc" "prescribed_data_2.inl" "prescribed_data.h"
     "bidomain.cc" "bidomain.inl" "bidomain.h")

@@ -24,7 +24,7 @@ namespace LA
 #include <deal.II/distributed/tria.h>
 
 #include "parameters.h"
-#include "prescribed_data.h"
+#include "fitzhugh-nagumo.h"
 
 namespace Bidomain
 {
@@ -51,19 +51,22 @@ namespace Bidomain
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out);
         void solve_membrane_lhs(
-            const double t,
-            const double tau,
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out);
         void assemble_tissue_rhs(
-            const double t,
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out);
         void solve_tissue_lhs(
-            const double t,
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out);
+        void assemble_Jtissue_rhs(
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out);
+        void solve_Jtissue_lhs(
             const double tau,
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out);
+        void output_results();
         
         const Parameters::AllParameters param;
 
@@ -84,10 +87,14 @@ namespace Bidomain
         AffineConstraints<double> constraints;
 
         LA::MPI::Vector solution;
+        LA::MPI::Vector locally_owned_temp;
+        LA::MPI::Vector locally_relevant_temp;
 
         SparsityPattern sparsity_pattern;
         LA::MPI::SparseMatrix mass_matrix;
+        LA::MPI::SparseMatrix membrane_matrix;
         LA::MPI::SparseMatrix tissue_matrix;
+        LA::MPI::SparseMatrix Jtissue_matrix;
 
         unsigned int timestep_number;
         const double time_step;

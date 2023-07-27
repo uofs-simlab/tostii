@@ -4,17 +4,21 @@ subsection FEM Parameters
 
   set Polynomial degree = 1
 
-  set Global refinement value = 6
+  set Global refinement value = 2
 end
 
 subsection Time Stepping Parameters
-  set Number of time steps = 300
+  set Number of time steps = 100
 
   set Initial time step = 0
   
   set Final time value = 1.0
 
-  set Time stepping = Backward Euler
+  set Membrane stepper = FORWARD_EULER
+
+  set Tissue stepper = BACKWARD_EULER
+
+  set OS stepper = Godunov
 end
 
 subsection Cell Parameters
@@ -40,7 +44,7 @@ subsection Cell Parameters
 end
 
 subsection Linear Solver Parameters
-  set Tolerance = 1e-9
+  set Tolerance = 1e-6
 
   set Max iteration multiplier = 578
 end
