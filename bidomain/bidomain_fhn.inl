@@ -4,11 +4,13 @@
 
 #include <deal.II/lac/full_matrix.h>
 #include <deal.II/lac/dynamic_sparsity_pattern.h>
+#include <deal.II/lac/block_sparsity_pattern.h>
 #include <deal.II/lac/sparsity_tools.h>
 
 #include <deal.II/grid/grid_generator.h>
 
 #include <deal.II/dofs/dof_tools.h>
+#include <deal.II/dofs/dof_renumbering.h>
 
 #include <deal.II/fe/fe_q.h>
 
@@ -19,6 +21,8 @@
 #include <tostii/time_stepping/implicit_runge_kutta.h>
 #include <tostii/time_stepping/operator_split_single.h>
 
+#include <array>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -27,6 +31,26 @@
 
 namespace Bidomain
 {
+    template<int dim>
+    constexpr types::global_dof_index BidomainProblem<dim>::local_to_component_index(const types::global_dof_index i) const
+    {
+        const unsigned int c_i = fe.system_to_component_index(i).first;
+
+        switch (c_i)
+        {
+        case transmembrane_component:
+            return i;
+        case state_variable_component:
+            return i - dofs_per_block[transmembrane_component];
+        case extracellular_component:
+            return i - dofs_per_block[transmembrane_component] - dofs_per_block[state_variable_component];
+        default:
+            /* guaranteed to throw */
+            AssertIndexRange(c_i, 3);
+            return 0;
+        }
+    }
+
     template<int dim>
     BidomainProblem<dim>::BidomainProblem(const Parameters::AllParameters& param)
         : param(param)
@@ -54,23 +78,93 @@ namespace Bidomain
 
         pcout << "Number of degrees of freedom: " << dof_handler.n_dofs() << std::endl;
 
-        locally_owned_dofs = dof_handler.locally_owned_dofs();
-        DoFTools::extract_locally_relevant_dofs(dof_handler, locally_relevant_dofs);
+        std::vector<unsigned int> blocks = {
+            transmembrane_component,
+            state_variable_component,
+            extracellular_component
+        };
+
+        DoFRenumbering::Cuthill_McKee(dof_handler);
+        DoFRenumbering::component_wise(dof_handler, blocks);
+
+        dofs_per_block = DoFTools::count_dofs_per_fe_component(dof_handler, false, blocks);
+
+        locally_owned_dofs = dof_handler.locally_owned_dofs().split_by_block(dofs_per_block);
+        locally_relevant_dofs = DoFTools::extract_locally_relevant_dofs(dof_handler).split_by_block(dofs_per_block);
+
+        {
+            FEValues<dim> fe_v(fe, quadrature, update_default);
+
+            component_local_dofs.resize(3);
+            for (unsigned int i = 0; i < fe_v.dofs_per_cell; ++i)
+            {
+                const unsigned int c_i = fe.system_to_component_index(i).first;
+
+                component_local_dofs[c_i].push_back(local_to_component_index(i));
+            }
+
+            for (unsigned int i = 0; i < 3; ++i)
+            {
+                component_local_dofs[i].shrink_to_fit();
+            }
+        }
 
         constraints.clear();
         constraints.close();
 
-        {
-            DynamicSparsityPattern dsp(locally_relevant_dofs);
-            DoFTools::make_sparsity_pattern(dof_handler, dsp, constraints, false);
-            SparsityTools::distribute_sparsity_pattern(dsp, locally_owned_dofs, mpi_communicator, locally_relevant_dofs);
-            sparsity_pattern.copy_from(dsp);
-        }
+        BlockDynamicSparsityPattern bdsp(locally_relevant_dofs);
+        DoFTools::make_sparsity_pattern(dof_handler, bdsp, constraints, false);
+        SparsityTools::distribute_sparsity_pattern(bdsp, locally_owned_dofs, mpi_communicator, locally_relevant_dofs);
+        sparsity_pattern.copy_from(bdsp);
 
         mass_matrix.reinit(locally_owned_dofs, locally_owned_dofs, sparsity_pattern, mpi_communicator);
-        membrane_matrix.reinit(locally_owned_dofs, locally_owned_dofs, sparsity_pattern, mpi_communicator);
-        tissue_matrix.reinit(locally_owned_dofs, locally_owned_dofs, sparsity_pattern, mpi_communicator);
-        Jtissue_matrix.reinit(locally_owned_dofs, locally_owned_dofs, sparsity_pattern, mpi_communicator);
+        explicit_mass_matrix.reinit(2, 2);
+        implicit_mass_matrix.reinit(2, 2);
+
+        {
+            std::vector<IndexSet> owned_dofs(2);
+
+            owned_dofs[explicit_transmembrane_component] = locally_owned_dofs[transmembrane_component];
+            owned_dofs[explicit_state_variable_component] = locally_owned_dofs[state_variable_component];
+            
+            membrane_rhs.reinit(owned_dofs, mpi_communicator);
+
+            BlockSparsityPattern explicit_bsp(2, 2);
+            explicit_bsp.block(explicit_transmembrane_component, explicit_transmembrane_component) =
+                sparsity_pattern.block(transmembrane_component, transmembrane_component);
+            explicit_bsp.block(explicit_transmembrane_component, explicit_state_variable_component) =
+                sparsity_pattern.block(transmembrane_component, state_variable_component);
+            explicit_bsp.block(explicit_state_variable_component, explicit_transmembrane_component) =
+                sparsity_pattern.block(state_variable_component, transmembrane_component);
+            explicit_bsp.block(explicit_state_variable_component, explicit_state_variable_component) =
+                sparsity_pattern.block(state_variable_component, state_variable_component);
+            explicit_bsp.collect_sizes();
+
+            membrane_matrix.reinit(owned_dofs, owned_dofs, explicit_bsp, mpi_communicator);
+        }
+
+        {
+            std::vector<IndexSet> owned_dofs(2);
+            
+            owned_dofs[implicit_transmembrane_component] = locally_owned_dofs[transmembrane_component];
+            owned_dofs[implicit_extracellular_component] = locally_owned_dofs[extracellular_component];
+
+            tissue_rhs.reinit(owned_dofs, mpi_communicator);
+
+            BlockSparsityPattern implicit_bsp(2, 2);
+            implicit_bsp.block(implicit_transmembrane_component, implicit_transmembrane_component) =
+                sparsity_pattern.block(transmembrane_component, transmembrane_component);
+            implicit_bsp.block(implicit_transmembrane_component, implicit_extracellular_component) =
+                sparsity_pattern.block(transmembrane_component, extracellular_component);
+            implicit_bsp.block(implicit_extracellular_component, implicit_transmembrane_component) =
+                sparsity_pattern.block(extracellular_component, transmembrane_component);
+            implicit_bsp.block(implicit_extracellular_component, implicit_extracellular_component) =
+                sparsity_pattern.block(extracellular_component, extracellular_component);
+            implicit_bsp.collect_sizes();
+
+            tissue_matrix.reinit(owned_dofs, owned_dofs, implicit_bsp, mpi_communicator);
+            implicit_matrix.reinit(owned_dofs, owned_dofs, implicit_bsp, mpi_communicator);
+        }
 
         solution.reinit(locally_owned_dofs, mpi_communicator);
         locally_owned_temp.reinit(locally_owned_dofs, mpi_communicator);
@@ -101,10 +195,24 @@ namespace Bidomain
         const unsigned int n_q_points = fe_v.n_quadrature_points;
 
         std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+        std::vector<types::global_dof_index> v_indices(dofs_per_block[transmembrane_component]);
+        std::vector<types::global_dof_index> w_indices(dofs_per_block[state_variable_component]);
+        std::vector<types::global_dof_index> ue_indices(dofs_per_block[extracellular_component]);
 
-        FullMatrix<double> cell_mass(dofs_per_cell, dofs_per_cell);
-        FullMatrix<double> cell_membrane(dofs_per_cell, dofs_per_cell);
-        FullMatrix<double> cell_tissue(dofs_per_cell, dofs_per_cell);
+        FullMatrix<double> mass_v(v_indices.size(), v_indices.size());
+        FullMatrix<double> mass_w(w_indices.size(), w_indices.size());
+
+        FullMatrix<double> membrane_vv(v_indices.size(), v_indices.size());
+        FullMatrix<double> membrane_vw(v_indices.size(), w_indices.size());
+        FullMatrix<double> membrane_wv(w_indices.size(), v_indices.size());
+        FullMatrix<double> membrane_ww(w_indices.size(), w_indices.size());
+
+        FullMatrix<double> tissue_v(v_indices.size(), v_indices.size());
+        FullMatrix<double> tissue_ue(ue_indices.size(), ue_indices.size());
+
+        const unsigned int transmembrane_offset = 0;
+        const unsigned int state_variable_offset = transmembrane_offset + dofs_per_block[transmembrane_component];
+        const unsigned int extracellular_offset = state_variable_offset + dofs_per_block[state_variable_offset];
 
         for (const auto& cell : dof_handler.active_cell_iterators())
         {
@@ -183,8 +291,8 @@ namespace Bidomain
                 }
 
                 constraints.distribute_local_to_global(cell_mass, local_dof_indices, mass_matrix);
-                constraints.distribute_local_to_global(cell_membrane, local_dof_indices, membrane_matrix);
-                constraints.distribute_local_to_global(cell_tissue, local_dof_indices, tissue_matrix);
+                constraints.distribute_local_to_global(cell_membrane, local_dof_indices, membrane_temp);
+                constraints.distribute_local_to_global(cell_tissue, local_dof_indices, tissue_temp);
             }
         }
 
@@ -192,45 +300,38 @@ namespace Bidomain
         membrane_matrix.compress(VectorOperation::add);
         tissue_matrix.compress(VectorOperation::add);
 
-        {
-            std::ofstream out("mass.mat");
-            mass_matrix.print(out);
-        }
-
         pcout << "done." << std::endl;
-    }
-
-    template<int dim>
-    void BidomainProblem<dim>::solve_monolithic_step(
-        const double,
-        const double,
-        const LA::MPI::Vector&,
-        LA::MPI::Vector&)
-    {
-        Assert(false, StandardExceptions::ExcNotImplemented());
     }
 
     template<int dim>
     void BidomainProblem<dim>::assemble_membrane_rhs(
         const double t,
-        const LA::MPI::Vector& y,
-        LA::MPI::Vector& out)
+        const LA::MPI::BlockVector& y,
+        LA::MPI::BlockVector& out)
     {
         TimerOutput::Scope timer_scope(computing_timer, "Membrane RHS");
         pcout << "Assembling membrane RHS... " << std::flush;
 
         FEValues<dim> fe_v(fe, quadrature,
             update_values | update_quadrature_points | update_JxW_values);
-        
+        FEValuesExtractors::Scalar transmembrane_extractor(transmembrane_component);
+                
         const unsigned int dofs_per_cell = fe_v.dofs_per_cell;
         const unsigned int n_q_points = fe_v.n_quadrature_points;
 
         std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
-        std::vector<Vector<double>> function_values(n_q_points, Vector<double>(3));
+        std::vector<types::global_dof_index> rhs_v_indices(dofs_per_block[transmembrane_component]);
+        std::vector<types::global_dof_index> rhs_w_indices(dofs_per_block[state_variable_component]);
 
-        Vector<double> cell_rhs(dofs_per_cell);
+        std::vector<double> function_values(n_q_points);
+
+        Vector<double> rhs_v(rhs_v_indices.size());
+        Vector<double> rhs_w(rhs_w_indices.size());
 
         FitzHughNagumo::Stimulus<dim> stimulus(t, param);
+
+        const unsigned int transmembrane_offset = 0;
+        const unsigned int state_variable_offset = transmembrane_offset + dofs_per_block[transmembrane_component];
 
         for (const auto& cell : dof_handler.active_cell_iterators())
         {
@@ -239,14 +340,14 @@ namespace Bidomain
                 fe_v.reinit(cell);
                 cell->get_dof_indices(local_dof_indices);
 
-                cell_rhs = 0.;
+                rhs_v = 0.;
+                rhs_w = 0.;
 
-                fe_v.get_function_values(y, local_dof_indices, function_values);
+                fe_v[transmembrane_extractor].get_function_values(y, function_values);
 
-                for (unsigned int i = 0; i < dofs_per_cell; ++i)
+                for (unsigned int i = 0; i < component_local_dofs[transmembrane_component].size(); ++i)
                 {
-                    const unsigned int c_i = fe.system_to_component_index(i).first;
-                    if (c_i != 0 && c_i != 1) continue;
+                    const unsigned int local_i = component_local_dofs[transmembrane_component][i] + transmembrane_offset;
 
                     double rhs_i = 0.;
 
@@ -255,27 +356,53 @@ namespace Bidomain
                         const double JxW = fe_v.JxW(q);
                         const Point<dim>& p = fe_v.quadrature_point(q);
 
-                        if (c_i == 0)
-                        {
-                            rhs_i += param.chi * JxW
-                                * fe_v.shape_value(i, q)
-                                * (function_values[q][0]
-                                        * function_values[q][0]
-                                        * function_values[q][0]
-                                        / param.fhn.epsilon / 3.
-                                    - stimulus.value(p));
-                        }
-                        else if (c_i == 1)
-                        {
-                            rhs_i += param.fhn.epsilon * param.fhn.beta * JxW
-                                * fe_v.shape_value(i, q);
-                        }
+                        rhs_i += param.chi * JxW
+                            * fe_v.shape_value(local_i, q)
+                            * (function_values[q]
+                                    * function_values[q]
+                                    * function_values[q]
+                                    / param.fhn.epsilon / 3.
+                                - stimulus.value(p));
                     }
 
-                    cell_rhs[i] += rhs_i;
+                    rhs_v[i] += rhs_i;
                 }
 
-                constraints.distribute_local_to_global(cell_rhs, local_dof_indices, out);
+                for (unsigned int i = 0; i < component_local_dofs[state_variable_component].size(); ++i)
+                {
+                    const unsigned int local_i = component_local_dofs[state_variable_component][i] + state_variable_offset;
+
+                    double rhs_i = 0.;
+
+                    for (unsigned int q = 0; q < n_q_points; ++q)
+                    {
+                        const double JxW = fe_v.JxW(q);
+                        
+                        rhs_i += param.fhn.epsilon * param.fhn.beta * JxW
+                            * fe_v.shape_value(local_i, q);
+                    }
+
+                    rhs_w[i] += rhs_i;
+                }
+
+                std::transform(
+                    component_local_dofs[transmembrane_component].begin(),
+                    component_local_dofs[transmembrane_component].end(),
+                    rhs_v_indices.begin(),
+                    [&local_dof_indices](unsigned int i) { return local_dof_indices[i]; });
+                constraints.distribute_local_to_global(
+                    rhs_v,
+                    rhs_v_indices,
+                    out.block(explicit_transmembrane_component));
+                std::transform(
+                    component_local_dofs[state_variable_component].begin(),
+                    component_local_dofs[state_variable_component].end(),
+                    rhs_w_indices.begin(),
+                    [&local_dof_indices](unsigned int i) { return local_dof_indices[i]; });
+                constraints.distribute_local_to_global(
+                    rhs_w,
+                    rhs_w_indices,
+                    out.block(explicit_state_variable_component));
             }
         }
 
