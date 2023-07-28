@@ -283,5 +283,32 @@ First, we again rearrange the equation:
     \bmat{M} (\bvec{Q}_{t + 1} - \bvec{Q}_t) & = h \bmat{B} \bvec{Q}_{t + 1} \\
     (\bmat{M} - h \bmat{B}) \bvec{Q}_{t + 1} & = \bmat{M} \bvec{Q}_t
 \end{align*}
+\noindent And, for Crank Nicolson:
+\begin{align*}
+    \bvec{Q}_{t + 1} & = \bvec{Q}_t + \frac{h}{2}
+        (\bvec{F}_\text{I}(t, \bvec{Q}_t) + \bvec{F}_\text{I}(t + h, \bvec{Q}_{t + 1})) \\
+    \bvec{Q}_{t + 1} - \bvec{Q}_t & = \frac{h}{2}
+        (\bmat{M}^{-1} \bmat{B} \bvec{Q}_t + \bmat{M}^{-1} \bmat{B} \bvec{Q}_{t + 1}) \\
+    \bmat{M} (\bvec{Q}_{t + 1} - \bvec{Q}_t) & = \frac{h}{2}
+        (\bmat{B} \bvec{Q}_t + \bmat{B} \bvec{Q}_{t + 1}) \\
+    (\bmat{M} - \frac{h}{2} \bmat{B}) \bvec{Q}_{t + 1} & = (\bmat{M} + \frac{h}{2} \bmat{B}) \bvec{Q}_t
+\end{align*}
+\noindent We generalize by picking some $\theta \in (0, 1]$:
+\begin{align*}
+    (\bmat{M} - \theta h \bmat{B}) \bvec{Q}_{t + 1} = (\bmat{M} + (1 - \theta) h \bmat{B}) \bvec{Q}_t
+\end{align*}
+\noindent Where Backward Euler corresponds to $\theta = 1$
+and Crank Nicolson corresponds to $\theta = \frac{1}{2}$.
+
+Furthermore, we can pull the same trick as with the explicit equation
+and define $\mathcal{K} = \{\, i \in \mathcal{I} \mid c_i \in \{\, 1, 3 \,\} \,\}$.
+Note that in the implicit equation, the only involvement of $w$ is
+the equation $\frac{\partial w}{\partial t} = 0$,
+so $w$ components (with $c_i = 2$) can be safely ignored.
+This yields the update formula:
+\begin{align*}
+    (\bmat{M}_\mathcal{K} - \theta h \bmat{B}_\mathcal{K}) \bvec{Q}_{\mathcal{K}, t + 1}
+        = (\bmat{M}_\mathcal{K} + (1 - \theta) h \bmat{B}_\mathcal{K}) \bvec{Q}_{\mathcal{K}, t}
+\end{align*}
 
 \end{document}
