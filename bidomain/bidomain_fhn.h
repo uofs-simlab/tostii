@@ -57,24 +57,15 @@ namespace Bidomain
             const LA::MPI::BlockVector& y,
             LA::MPI::BlockVector& out);
         void solve_membrane_lhs(
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
-        void assemble_tissue_rhs(
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
-        void solve_tissue_lhs(
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
-        void assemble_Jtissue_rhs(
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
-        void solve_Jtissue_lhs(
+            const LA::MPI::BlockVector& y,
+            LA::MPI::BlockVector& out);
+        void step_tissue(
             const double tau,
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
+            const LA::MPI::BlockVector& y,
+            LA::MPI::BlockVector& out);
         void output_results();
 
-        constexpr types::global_dof_index local_to_component_index(const types::global_dof_index i) const;
+        constexpr types::global_dof_index global_to_component_index(const types::global_dof_index i) const;
 
         const Parameters::AllParameters param;
 
@@ -97,13 +88,12 @@ namespace Bidomain
         AffineConstraints<double> constraints;
 
         LA::MPI::BlockVector solution;
-        LA::MPI::BlockVector locally_owned_temp;
-        LA::MPI::BlockVector locally_relevant_temp;
+        LA::MPI::BlockVector relevant_solution;
+        LA::MPI::BlockVector membrane_temp;
+        LA::MPI::BlockVector relevant_membrane_temp;
         LA::MPI::BlockVector membrane_rhs;
         LA::MPI::BlockVector tissue_rhs;
 
-        BlockSparsityPattern sparsity_pattern;
-        LA::MPI::BlockSparseMatrix mass_matrix;
         LA::MPI::BlockSparseMatrix explicit_mass_matrix;
         LA::MPI::BlockSparseMatrix implicit_mass_matrix;
         LA::MPI::BlockSparseMatrix membrane_matrix;
