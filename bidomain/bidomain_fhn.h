@@ -65,7 +65,13 @@ namespace Bidomain
             LA::MPI::BlockVector& out);
         void output_results();
 
-        constexpr types::global_dof_index global_to_component_index(const types::global_dof_index i) const;
+        constexpr types::global_dof_index global_to_component_index(
+            const unsigned int c_i,
+            const types::global_dof_index i) const;
+        static constexpr void copy_bdsp(
+            const BlockDynamicSparsityPattern& bdsp,
+            const std::vector<unsigned int>& mask,
+            BlockDynamicSparsityPattern& out);
 
         const Parameters::AllParameters param;
 
@@ -79,6 +85,10 @@ namespace Bidomain
 
         std::vector<IndexSet> locally_owned_dofs;
         std::vector<IndexSet> locally_relevant_dofs;
+        std::vector<IndexSet> explicit_owned_dofs;
+        std::vector<IndexSet> explicit_relevant_dofs;
+        std::vector<IndexSet> implicit_owned_dofs;
+        std::vector<IndexSet> implicit_relevant_dofs;
         std::vector<types::global_dof_index> dofs_per_block;
         std::vector<std::vector<types::global_dof_index>> component_local_dofs;
 
