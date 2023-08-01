@@ -31,6 +31,8 @@
 #include <deal.II/sundials/arkode.h>
 #include <deal.II/sundials/sunlinsol_wrapper.h>
 
+#include <Sacado.hpp>
+
 #include <deal.II/distributed/tria.h>
 
 #include <fstream>

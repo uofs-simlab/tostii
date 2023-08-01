@@ -17,6 +17,8 @@
 
 #include <deal.II/sundials/kinsol.h>
 
+#include <Sacado.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
