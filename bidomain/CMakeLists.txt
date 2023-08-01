@@ -23,3 +23,8 @@ tostii_executable(bidomain_fhn
     "parameters.cc" "parameters.h"
     "fitzhugh-nagumo.h" "fitzhugh-nagumo.inl" "fitzhugh-nagumo.cc"
     "bidomain_fhn.cc" "bidomain_fhn.inl" "bidomain_fhn.h")
+
+tostii_executable(bidomain_fhn_manual
+    "parameters.cc" "parameters.h"
+    "fitzhugh-nagumo.h" "fitzhugh-nagumo.inl" "fitzhugh-nagumo.cc"
+    "bidomain_fhn_manual.cc" "bidomain_fhn_manual.inl" "bidomain_fhn_manual.h")
