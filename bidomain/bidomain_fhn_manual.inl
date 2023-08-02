@@ -36,16 +36,94 @@ namespace Bidomain
     template<int dim>
     BaseProblem<dim>::BaseProblem(const Parameters::AllParameters& param)
         : param(param)
-        , mpi_communicator(MPI_COMM_WORLD)
-        , pcout(std::cout, Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
-        , computing_timer(mpi_communicator, pcout, TimerOutput::never, TimerOutput::wall_times)
-        , triangulation(mpi_communicator)
+        , computing_timer(std::cout, TimerOutput::never, TimerOutput::wall_times)
+        , dof_handler(triangulation)
+        , dof_offsets(4)
+        , fe(FE_Q<dim>(param.polynomial_degree), 3)
         , quadrature(param.quadrature_order)
     {
         GridGenerator::hyper_cube(triangulation, 0., 1.);
         triangulation.refine_global(param.global_refinement_level);
 
-        pcout << "Number of active cells: " << triangulation.n_active_cells() << std::endl;
+        std::cout << "Number of active cells: " << triangulation.n_active_cells() << std::endl;
+
+        dof_handler.distribute_dofs(fe);
+
+        std::cout << "Number of degrees of freedom: " << dof_handler.n_dofs() << std::endl;
+
+        std::vector<unsigned int> blocks = {
+            transmembrane_component,
+            state_variable_component,
+            extracellular_component
+        };
+
+        dofs_per_block = DoFTools::count_dofs_per_fe_block(dof_handler, blocks);
+        std::partial_sum(
+            dofs_per_block.begin(),
+            dofs_per_block.end(),
+            dof_offsets.begin() + 1);
+
+        DoFRenumbering::Cuthill_McKee(dof_handler);
+        DoFRenumbering::component_wise(dof_handler, blocks);
+
+        constraints.clear();
+        constraints.close();
+
+        sparsity_template.reinit(dof_handler.n_dofs(), dof_handler.n_dofs());
+    }
+
+    template<int dim>
+    void BaseProblem<dim>::initialize_split(
+        const std::vector<unsigned int>& mask,
+        DynamicSparsityPattern& dsp,
+        std::vector<unsigned int>& component_dof_indices,
+        std::function<void(
+            const Vector<double>&,
+            Vector<double>&)> translate[2]) const
+    {
+        std::vector<unsigned int> mask_offsets(mask.size() + 1);
+        mask_offsets[0] = 0;
+        std::partial_sum(
+            mask.begin(),
+            mask.end(),
+            mask_offsets.begin() + 1,
+            [this](const unsigned int c) { return this->dofs_per_block[c]; });
+
+        dsp.reinit(mask_offsets.back(), mask_offsets.back());
+        
+        for (unsigned int I = 0; I < mask.size(); ++I)
+        {
+            for (unsigned int J = 0; J < mask.size(); ++J)
+            {
+                for (unsigned int i = 0; i < dofs_per_block[mask[I]]; ++i)
+                {
+                    for (unsigned int j = 0; j < dofs_per_block[mask[J]]; ++j)
+                    {
+                        if (sparsity_template.exists(i + dof_offsets[mask[I]], j + dof_offsets[mask[J]]))
+                        {
+                            dsp.add(i + mask_offsets[I], j + mask_offsets[J]);
+                        }
+                    }
+                }
+            }
+        }
+
+        const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+        const unsigned int dofs_per_component = dofs_per_cell / fe.n_components();
+
+        component_dof_indices.resize(dofs_per_component * mask.size());
+
+        for (unsigned int i = 0; i < dofs_per_cell; ++i)
+        {
+            const unsigned int c_i = fe.system_to_component_index(i).first;
+            auto it = std::find(mask.begin(), mask.end(), c_i);
+            if (it != mask.end())
+            {
+                component_dof_indices[(it - mask.begin()) * dofs_per_component] = i;
+            }
+        }
+
+        // TODO: create translate functions
     }
 }
 

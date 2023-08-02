@@ -41,16 +41,35 @@ namespace Bidomain
         BaseProblem(const Parameters::AllParameters& param);
 
     protected:
+        static constexpr unsigned int
+            transmembrane_component = 0,
+            state_variable_component = 1,
+            extracellular_component = 2;
+
+        void initialize_split(
+            const std::vector<unsigned int>& mask,
+            DynamicSparsityPattern& dsp,
+            std::vector<unsigned int>& component_dof_indices,
+            std::function<void(
+                const Vector<double>&,
+                Vector<double>&)> translate[2]) const;
+
         const Parameters::AllParameters param;
 
-        MPI_Comm mpi_communicator;
-
-        ConditionalOStream pcout;
         TimerOutput computing_timer;
 
-        parallel::distributed::Triangulation<dim> triangulation;
+        std::vector<unsigned int> dofs_per_block;
+        std::vector<unsigned int> dof_offsets;
 
+        Triangulation<dim> triangulation;
+        DoFHandler<dim> dof_handler;
+
+        const FESystem<dim> fe;
         const QGauss<dim> quadrature;
+
+        AffineConstraints<double> constraints;
+
+        DynamicSparsityPattern sparsity_template;
     };
 
     template<int dim>
@@ -67,10 +86,6 @@ namespace Bidomain
             LA::MPI::Vector& out);
 
     private:
-        static constexpr unsigned int
-            transmembrane_component = 0,
-            state_variable_component = 1;
-
         void assemble_system();
         void assemble_membrane_rhs(
             double t,
@@ -80,20 +95,11 @@ namespace Bidomain
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out);
 
-        DoFHandler<dim> dof_handler;
-
-        IndexSet locally_owned_dofs;
-        IndexSet locally_relevant_dofs;
-
-        const FESystem<dim> fe;
-
-        AffineConstraints<double> constraints;
-
-        LA::MPI::Vector temp;
+        Vector<double> temp;
 
         SparsityPattern sparsity_pattern;
-        LA::MPI::SparseMatrix mass_matrix;
-        LA::MPI::SparseMatrix membrane_matrix;
+        SparseMatrix<double> mass_matrix;
+        SparseMatrix<double> membrane_matrix;
     };
 
     template<int dim>
@@ -117,21 +123,12 @@ namespace Bidomain
 
         void assemble_system();
 
-        DoFHandler<dim> dof_handler;
-
-        IndexSet locally_owned_dofs;
-        IndexSet locally_relevant_dofs;
-
-        const FESystem<dim> fe;
-
-        AffineConstraints<double> constraints;
-
-        LA::MPI::Vector temp;
+        Vector<double> temp;
 
         SparsityPattern sparsity_pattern;
-        LA::MPI::SparseMatrix mass_matrix;
-        LA::MPI::SparseMatrix tissue_matrix;
-        LA::MPI::SparseMatrix system_matrix;
+        SparseMatrix<double> mass_matrix;
+        SparseMatrix<double> tissue_matrix;
+        SparseMatrix<double> system_matrix;
     };
 
     template<int dim>
@@ -154,8 +151,6 @@ namespace Bidomain
             extracellular_component = 2;
 
         void output_results() const;
-
-        DoFHandler<dim> dof_handler;
 
         LA::MPI::Vector solution;
 
