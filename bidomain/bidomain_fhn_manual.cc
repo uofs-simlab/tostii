@@ -3,8 +3,6 @@
 int main(int argc, char* argv[])
 try
 {
-    dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
-
     if (argc != 2)
     {
         using std::string_literals::operator""s;

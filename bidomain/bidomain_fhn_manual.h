@@ -48,8 +48,11 @@ namespace Bidomain
 
         void initialize_split(
             const std::vector<unsigned int>& mask,
+            AffineConstraints<double>& constraints,
             DynamicSparsityPattern& dsp,
             std::vector<unsigned int>& component_dof_indices,
+            std::function<types::global_dof_index(
+                types::global_dof_index)>& shift,
             std::function<void(
                 const Vector<double>&,
                 Vector<double>&)> translate[2]) const;
@@ -67,8 +70,7 @@ namespace Bidomain
         const FESystem<dim> fe;
         const QGauss<dim> quadrature;
 
-        AffineConstraints<double> constraints;
-
+        AffineConstraints<double> constraints_template;
         DynamicSparsityPattern sparsity_template;
     };
 
@@ -82,20 +84,29 @@ namespace Bidomain
     protected:
         void rhs_f(
             double t,
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
+            const Vector<double>& y,
+            Vector<double>& out);
 
     private:
         void assemble_system();
         void assemble_membrane_rhs(
             double t,
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
+            const Vector<double>& y,
+            Vector<double>& out);
         void solve_membrane_lhs(
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
+            const Vector<double>& y,
+            Vector<double>& out);
+
+        AffineConstraints<double> constraints;
+        std::vector<unsigned int> component_dof_indices;
+        std::function<types::global_dof_index(
+            types::global_dof_index)> shift;
+        std::function<void(
+            const Vector<double>&,
+            Vector<double>&)> translate[2];
 
         Vector<double> temp;
+        Vector<double> translate_buffer[2];
 
         SparsityPattern sparsity_pattern;
         SparseMatrix<double> mass_matrix;
@@ -113,17 +124,22 @@ namespace Bidomain
         void step_tissue(
             double t,
             double tau,
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
+            const Vector<double>& y,
+            Vector<double>& out);
 
     private:
-        static constexpr unsigned int
-            transmembrane_component = 0,
-            extracellular_component = 1;
-
         void assemble_system();
 
+        AffineConstraints<double> constraints;
+        std::vector<unsigned int> component_dof_indices;
+        std::function<types::global_dof_index(
+            types::global_dof_index)> shift;
+        std::function<void(
+            const Vector<double>&,
+            Vector<double>&)> translate[2];
+
         Vector<double> temp;
+        Vector<double> translate_buffer[2];
 
         SparsityPattern sparsity_pattern;
         SparseMatrix<double> mass_matrix;
@@ -145,14 +161,9 @@ namespace Bidomain
         void run();
 
     private:
-        static constexpr unsigned int
-            transmembrane_component = 0,
-            state_variable_component = 1,
-            extracellular_component = 2;
-
         void output_results() const;
 
-        LA::MPI::Vector solution;
+        Vector<double> solution;
 
         unsigned int timestep_number;
         const double time_step;

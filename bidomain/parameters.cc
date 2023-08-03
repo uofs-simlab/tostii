@@ -203,7 +203,7 @@ namespace Bidomain::Parameters
         sigmae = prm.get_double("sigmae value");
 
         passive.parse_parameters(prm);
-        fhn.declare_parameters(prm);
+        fhn.parse_parameters(prm);
 
         prm.leave_subsection();
     }

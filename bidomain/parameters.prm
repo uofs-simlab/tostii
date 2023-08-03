@@ -4,7 +4,7 @@ subsection FEM Parameters
 
   set Polynomial degree = 1
 
-  set Global refinement value = 2
+  set Global refinement value = 6
 end
 
 subsection Time Stepping Parameters
@@ -50,7 +50,7 @@ subsection Linear Solver Parameters
 end
 
 subsection Output Parameters
-  set Number of pvtu files = 10
+  set Number of pvtu files = 100
 
   set Output prefix = ./solution
 end
