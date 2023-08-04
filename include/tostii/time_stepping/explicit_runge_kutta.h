@@ -60,7 +60,7 @@ namespace tostii::TimeStepping
                 VectorType&)>& id_minus_tau_J_inverse,
             TimeType t,
             TimeType delta_t,
-            VectorType& y);
+            VectorType& y) override;
 
         /**
          * This function is used to advance from time @p t to t+ @p delta_t. This

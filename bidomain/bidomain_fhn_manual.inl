@@ -200,8 +200,8 @@ namespace Bidomain
             std::vector<std::pair<unsigned int, unsigned int>> local_ranges(mask.size());
             for (unsigned int i = 0; i < mask.size(); ++i)
             {
-                local_ranges[i].first = dof_offsets[i];
-                local_ranges[i].second = dofs_per_block[i];
+                local_ranges[i].first = dof_offsets[mask[i]];
+                local_ranges[i].second = dofs_per_block[mask[i]];
             }
 
             translate[1] = [local_ranges](
@@ -493,7 +493,6 @@ namespace Bidomain
         const Vector<double>& y,
         Vector<double>& out)
     {
-        TimerOutput::Scope timer_scope(this->computing_timer, "Explicit Step");
         std::cout << "\tExplicit step... " << std::endl;
 
         translate[0](y, translate_buffer[0]);
@@ -553,7 +552,7 @@ namespace Bidomain
         FEValues<dim> fe_v(
             this->fe,
             this->quadrature,
-            update_values | update_gradients | update_JxW_values);
+            update_values | update_gradients | update_quadrature_points | update_JxW_values);
         
         const unsigned int dofs_per_cell = fe_v.dofs_per_cell;
         const unsigned int n_q_points = fe_v.n_quadrature_points;
@@ -593,36 +592,38 @@ namespace Bidomain
                         const unsigned int& local_j = component_dof_indices[j];
                         const unsigned int c_j = this->fe.system_to_component_index(local_j).first;
 
-                        double shape_value_product = 0.;
-                        double shape_grad_product = 0.;
-
                         for (unsigned int q = 0; q < n_q_points; ++q)
                         {
-                            shape_value_product += fe_v.JxW(q)
-                                * fe_v.shape_value(local_i, q)
-                                * fe_v.shape_value(local_j, q);
-                            shape_grad_product += fe_v.JxW(q)
-                                * fe_v.shape_grad(local_i, q)
-                                * fe_v.shape_grad(local_j, q);
-                        }
-
-                        switch (c_i << 2 | c_j)
-                        {
-                        case this->transmembrane_component << 2 | this->transmembrane_component:
-                            cell_mass(i, j) += this->param.chi * this->param.Cm
-                                * shape_value_product;
-                            [[fallthrough]];
-                        case this->transmembrane_component << 2 | this->extracellular_component:
-                        case this->extracellular_component << 2 | this->transmembrane_component:
-                            cell_tissue(i, j) -= this->param.sigmai
-                                * shape_grad_product;
-                            break;
-                        case this->extracellular_component << 2 | this->extracellular_component:
-                            cell_tissue(i, j) -= (this->param.sigmai + this->param.sigmae)
-                                * shape_grad_product;
-                            break;
-                        default:
-                            Assert(false, ExcMessage("Invalid DoF component"));
+                            const Tensor<2, dim> intracellular_conductivity
+                                = FitzHughNagumo::IntracellularConductivity<dim>(0., this->param)
+                                    .value(fe_v.quadrature_point(q));
+                            const Tensor<2, dim> extracellular_conductivity
+                                = FitzHughNagumo::ExtracellularConductivity<dim>(0., this->param)
+                                    .value(fe_v.quadrature_point(q));
+                            
+                            switch (c_i << 2 | c_j)
+                            {
+                            case this->transmembrane_component << 2 | this->transmembrane_component:
+                                cell_mass(i, j) += this->param.chi * this->param.Cm * fe_v.JxW(q)
+                                    * fe_v.shape_value(local_i, q)
+                                    * fe_v.shape_value(local_j, q);
+                                [[fallthrough]];
+                            case this->transmembrane_component << 2 | this->extracellular_component:
+                            case this->extracellular_component << 2 | this->transmembrane_component:
+                                cell_tissue(i, j) -= fe_v.JxW(q)
+                                    * (intracellular_conductivity
+                                    * fe_v.shape_grad(local_i, q)
+                                    * fe_v.shape_grad(local_j, q));
+                                break;
+                            case this->extracellular_component << 2 | this->extracellular_component:
+                                cell_tissue(i, j) -= fe_v.JxW(q)
+                                    * ((intracellular_conductivity + extracellular_conductivity)
+                                    * fe_v.shape_grad(local_i, q)
+                                    * fe_v.shape_grad(local_j, q));
+                                break;
+                            default:
+                                Assert(false, ExcMessage("Invalid DoF component"));
+                            }
                         }
                     }
                 }
@@ -704,7 +705,7 @@ namespace Bidomain
         , ExplicitProblem<dim>(param)
         , ImplicitProblem<dim>(param)
         , timestep_number(this->param.initial_time_step)
-        , time_step(1. / this->param.n_time_steps)
+        , time_step(this->param.final_time / this->param.n_time_steps)
         , time(timestep_number * time_step)
     {
         solution.reinit(this->dof_handler.n_dofs());
@@ -788,9 +789,31 @@ namespace Bidomain
             membrane_operator,
             tissue_operator
         };
+
+        std::vector<OSPair<double>> stages;
+        {
+            const std::vector<OSPair<double>>& orig_stages
+                = os_method<double>::to_os_pairs(this->param.os_stepper);
+
+            for (const auto& pair : orig_stages)
+            {
+                if (pair.op_num == 0)
+                {
+                    for (unsigned int i = 0; i < 100; ++i)
+                    {
+                        stages.emplace_back(pair.op_num, pair.alpha / 100.);
+                    }
+                }
+                else
+                {
+                    stages.push_back(pair);
+                }
+            }
+        }
+
         OperatorSplitSingle<Vector<double>> stepper(
             operators,
-            this->param.os_stepper,
+            stages,
             solution);
         
         while (timestep_number < this->param.n_time_steps)

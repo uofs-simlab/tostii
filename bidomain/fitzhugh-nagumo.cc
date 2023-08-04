@@ -8,6 +8,12 @@ namespace Bidomain::FitzHughNagumo
     template class Stimulus<2>;
     template class Stimulus<3>;
 
+    template class IntracellularConductivity<2>;
+    template class IntracellularConductivity<3>;
+
+    template class ExtracellularConductivity<2>;
+    template class ExtracellularConductivity<3>;
+
     namespace DataPostprocessors
     {
         template class TransmembranePart<2>;

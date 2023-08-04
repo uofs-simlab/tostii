@@ -47,15 +47,33 @@ namespace Bidomain::FitzHughNagumo
         : Function<dim>(1, initial_time)
     { }
 
-    template<int dim>
-    double Stimulus<dim>::value(
-        const Point<dim>& p,
+    template<>
+    double Stimulus<2>::value(
+        const Point<2>& p,
         const unsigned int component) const
     {
         (void)component;
         AssertIndexRange(component, 1);
 
-        if (p.norm_square() < 1.)
+        if (this->get_time() <= 1. && p[0] <= 0.2 && p[1] <= 0.2)
+        {
+            return 0.0667;
+        }
+        else
+        {
+            return 0.;
+        }
+    }
+
+    template<>
+    double Stimulus<3>::value(
+        const Point<3>& p,
+        const unsigned int component) const
+    {
+        (void)component;
+        AssertIndexRange(component, 1);
+
+        if (this->get_time() <= 1. && p[0] <= 0.2 && p[1] <= 0.2 && p[2] <= 0.2)
         {
             return 10.;
         }
@@ -63,6 +81,60 @@ namespace Bidomain::FitzHughNagumo
         {
             return 0.;
         }
+    }
+
+    template<>
+    IntracellularConductivity<2>::IntracellularConductivity(
+        const double initial_time,
+        const Parameters::AllParameters& param)
+        : TensorFunction<2, 2>(initial_time)
+        , sigmai { param.sigmaix, param.sigmaiy }
+    { }
+
+    template<>
+    IntracellularConductivity<3>::IntracellularConductivity(
+        const double initial_time,
+        const Parameters::AllParameters& param)
+        : TensorFunction<2, 3>(initial_time)
+        , sigmai { param.sigmaix, param.sigmaiy, param.sigmaiy }
+    { }
+
+    template<int dim>
+    Tensor<2, dim> IntracellularConductivity<dim>::value(const Point<dim>&) const
+    {
+        Tensor<2, dim> ret;
+        for (unsigned int i = 0; i < dim; ++i)
+        {
+            ret[i][i] = sigmai[i];
+        }
+        return ret;
+    }
+
+    template<>
+    ExtracellularConductivity<2>::ExtracellularConductivity(
+        const double initial_time,
+        const Parameters::AllParameters& param)
+        : TensorFunction<2, 2>(initial_time)
+        , sigmae { param.sigmaex, param.sigmaey }
+    { }
+
+    template<>
+    ExtracellularConductivity<3>::ExtracellularConductivity(
+        const double initial_time,
+        const Parameters::AllParameters& param)
+        : TensorFunction<2, 3>(initial_time)
+        , sigmae { param.sigmaex, param.sigmaey, param.sigmaey }
+    { }
+
+    template<int dim>
+    Tensor<2, dim> ExtracellularConductivity<dim>::value(const Point<dim>&) const
+    {
+        Tensor<2, dim> ret;
+        for (unsigned int i = 0; i < dim; ++i)
+        {
+            ret[i][i] = sigmae[i];
+        }
+        return ret;
     }
 }
 

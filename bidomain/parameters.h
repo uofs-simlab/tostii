@@ -60,6 +60,10 @@ namespace Bidomain::Parameters
         double Cm;
         double sigmai;
         double sigmae;
+        double sigmaix;
+        double sigmaiy;
+        double sigmaex;
+        double sigmaey;
         PassiveParameters passive;
         FHNParameters fhn;
 

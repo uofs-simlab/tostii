@@ -186,6 +186,26 @@ namespace Bidomain::Parameters
             "1e0",
             Patterns::Double(),
             "Extracellular active conductivity");
+        prm.declare_entry(
+            "sigmaix value",
+            "1e0",
+            Patterns::Double(),
+            "Intracellular active conductivity (xx component)");
+        prm.declare_entry(
+            "sigmaiy value",
+            "1e0",
+            Patterns::Double(),
+            "Intracellular active conductivity (yy component)");
+        prm.declare_entry(
+            "sigmaex value",
+            "1e0",
+            Patterns::Double(),
+            "Extracellular active conductivity (xx component)");
+        prm.declare_entry(
+            "sigmaey value",
+            "1e0",
+            Patterns::Double(),
+            "Extracellular active conductivity (yy component)");
 
         PassiveParameters::declare_parameters(prm);
         FHNParameters::declare_parameters(prm);
@@ -201,6 +221,10 @@ namespace Bidomain::Parameters
         Cm = prm.get_double("Cm value");
         sigmai = prm.get_double("sigmai value");
         sigmae = prm.get_double("sigmae value");
+        sigmaix = prm.get_double("sigmaix value");
+        sigmaiy = prm.get_double("sigmaiy value");
+        sigmaex = prm.get_double("sigmaex value");
+        sigmaey = prm.get_double("sigmaey value");
 
         passive.parse_parameters(prm);
         fhn.parse_parameters(prm);

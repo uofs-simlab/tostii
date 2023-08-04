@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deal.II/base/function.h>
+#include <deal.II/base/tensor_function.h>
 
 #include <deal.II/lac/vector.h>
 
@@ -54,6 +55,36 @@ namespace Bidomain::FitzHughNagumo
         double value(
             const Point<dim>& p,
             const unsigned int component = 0) const override;
+    };
+
+    template<int dim>
+    class IntracellularConductivity
+        : public TensorFunction<2, dim>
+    {
+    public:
+        IntracellularConductivity(
+            const double initial_time,
+            const Parameters::AllParameters& param);
+        
+        virtual Tensor<2, dim> value(const Point<dim>& p) const override;
+
+    private:
+        double sigmai[dim];
+    };
+
+    template<int dim>
+    class ExtracellularConductivity
+        : public TensorFunction<2, dim>
+    {
+    public:
+        ExtracellularConductivity(
+            const double initial_time,
+            const Parameters::AllParameters& param);
+        
+        virtual Tensor<2, dim> value(const Point<dim>& p) const override;
+
+    private:
+        double sigmae[dim];
     };
 
     namespace DataPostprocessors
