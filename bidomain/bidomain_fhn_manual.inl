@@ -802,7 +802,8 @@ namespace Bidomain
                 {
                     for (unsigned int i = 0; i < 100; ++i)
                     {
-                        stages.emplace_back(pair.op_num, pair.alpha / 100.);
+                        OSPair<double> sub_pair = { pair.op_num, pair.alpha / 100. };
+                        stages.push_back(sub_pair);
                     }
                 }
                 else
