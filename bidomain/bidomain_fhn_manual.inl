@@ -710,6 +710,11 @@ namespace Bidomain
         , time(timestep_number * time_step)
     {
         solution.reinit(this->dof_handler.n_dofs());
+
+        VectorTools::interpolate(
+            this->dof_handler,
+            FitzHughNagumo::InitialValues<dim>(this->param),
+            solution);
     }
 
     template<int dim>
