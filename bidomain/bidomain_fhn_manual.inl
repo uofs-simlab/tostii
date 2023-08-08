@@ -28,7 +28,6 @@
 #include <functional>
 #include <algorithm>
 #include <numeric>
-#include <ranges>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -209,15 +208,17 @@ namespace Bidomain
                 Vector<double>& global_v)
             {
                 unsigned int first = 0;
+                std::vector<unsigned int> indices;
                 for (auto [offset, size] : local_ranges)
                 {
-                    unsigned int last = first + size;
-                    std::ranges::iota_view indices(first, last);
+                    indices.resize(size);
+                    std::iota(indices.begin(), indices.end(), first);
+
                     local_v.extract_subvector_to(
                         indices.begin(),
                         indices.end(),
                         global_v.begin() + offset);
-                    first = last;
+                    first += size;
                 }
             };
         }
