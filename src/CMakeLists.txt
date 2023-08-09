@@ -1,6 +1,7 @@
 
 set(TOSTII_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include/tostii")
 
+add_subdirectory("checkpoint")
 add_subdirectory("grid")
 add_subdirectory("time_stepping")
 
@@ -10,6 +11,7 @@ deal_II_setup_target(tostii)
 target_include_directories(tostii PUBLIC
     "${CMAKE_SOURCE_DIR}/include")
 target_link_libraries(tostii
+    tostii_checkpoint
     tostii_grid
     tostii_time_stepping)
 
