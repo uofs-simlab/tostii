@@ -31,7 +31,7 @@ The Nonlinear Schroedinger Equation (NSE) is given by:
 \begin{align*}
 \psi(t, \bvec{x}) = 0
 \end{align*}
-\noindent For all (t, $\bvec{x}) \in (0, T) \times \partial \Omega$.
+\noindent For all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$.
 
 Because $\psi$ is complex-valued, it is convenient to separate the equation into real and imaginary parts.
 If we take $\psi(t, \bvec{x}) = u(t, \bvec{x}) + \ii v(t, \bvec{x})$
@@ -118,13 +118,165 @@ where $\varphi_j : \Omega \rightarrow \mathbb{R}$ is a set of basis functions
 We write $\bvec{w} = \begin{bmatrix}
     u \\
     v
-\end{bmatrix}$ and make the approximation $\bvec{w} = W_j \bvec{\Phi}_j$ (Einstein summation).
+\end{bmatrix}$ and make the approximation $\bvec{w} = W_j \bvec{\Phi}_j$ (Einstein summation);
+furthermore, we approximate $\frac{\partial \bvec{w}}{\partial t} = \dot{W}_j \bvec{\Phi}_j$.
+Then, we have that:
+\begin{align*}
+    u & = W_j \varphi_{b_j} \delta_{1, c_j} \\
+    v & = W_j \varphi_{b_j} \delta_{2, c_j} \\
+    \frac{\partial u}{\partial t} & = \dot{W}_j \varphi_{b_j} \delta_{1, c_j} \\
+    \frac{\partial v}{\partial t} & = \dot{W}_j \varphi_{b_j} \delta_{2, c_j}
+\end{align*}
+
 Then, we multiply and integrate the system with a basis function $\bvec{\Phi}_i$:
 \begin{align*}
     \left< \bvec{\Phi}_i \mid \begin{matrix}
-        \ii \frac{\partial v}{\partial t} - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u \\
-        -\ii \frac{\partial u}{\partial t} - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v
-    \end{matrix} \right> = 0
+            \ii \partial_t v - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u \\
+            -\ii \partial_t u - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v
+        \end{matrix} \right> & = 0 \\
+    \ii \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \partial_t v \\
+            -\partial_t u
+        \end{matrix} \right> - \frac{1}{2} \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \Delta u \\
+            \Delta v
+        \end{matrix} \right> + \left< \bvec{\Phi}_i \mid \begin{matrix}
+            V u \\
+            V v
+        \end{matrix} \right> + \kappa \left< \bvec{\Phi}_i \mid \begin{matrix}
+            u^3 \\
+            v^3
+        \end{matrix} \right> + \kappa \left< \bvec{\Phi}_i \mid \begin{matrix}
+            u v^2 \\
+            u^2 v
+        \end{matrix} \right> & = 0
+\end{align*}
+\noindent We consider each form separately:
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        \partial_t v \\
+        -\partial_t u
+    \end{matrix} \right>
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid \partial_t v \right>
+        - \delta_{2, c_i} \left< \varphi_{b_i} \mid \partial_t u \right> \\
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid \dot{W}_j \varphi_{b_j} \delta_{2, c_j} \right>
+        - \delta_{2, c_i} \left< \varphi_{b_i} \mid \dot{W}_j \varphi_{b_j} \delta_{1, c_j} \right> \\
+    & = (\delta_{1, c_i} \delta_{2, c_j} - \delta_{2, c_i} \delta_{1, c_j})
+        \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \dot{W}_j
+\end{align*}
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        \Delta u \\
+        \Delta v
+    \end{matrix} \right>
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid \Delta u \right>
+        + \delta_{2, c_i} \left< \varphi_{b_i} \mid \Delta v \right>
+\end{align*}
+\noindent We note that:
+\begin{align*}
+    \left< \varphi_{b_i} \mid \Delta f \right>
+    & = \int_\Omega \varphi_{b_i} \Delta f \, \dd \bvec{x} \\
+    & = \oint_{\partial \Omega} \varphi_{b_i} \nabla f \cdot \hat{\brvec{n}} \, \dd \bvec{s}
+        - \int_\Omega \nabla \varphi_{b_i} \cdot \nabla f \, \dd \bvec{x} \\
+    & = \left< \varphi_{b_i} \hat{\brvec{n}} \mid \nabla f \right>_{\partial \Omega}
+        - \left< \nabla \varphi_{b_i} \mid \nabla f \right>
+\end{align*}
+\noindent And, because we have Dirichlet boundary conditions,
+we must have that $\varphi_{b_i}(t, \bvec{x}) = 0$
+for all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$. So:
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        \Delta u \\
+        \Delta v
+    \end{matrix} \right>
+    & = -\delta_{1, c_i} \left< \nabla \varphi_{b_i} \mid \nabla u \right>
+        - \delta_{2, c_i} \left< \nabla \varphi_{b_i} \mid \nabla v \right> \\
+    & = -\delta_{1, c_i} \left< \nabla \varphi_{b_i} \mid W_j \nabla \varphi_{b_j} \delta_{1, c_j} \right>
+        - \delta_{2, c_i} \left< \nabla \varphi_{b_i} \mid W_j \nabla \varphi_{b_j} \delta_{2, c_j} \right> \\
+    & = -(\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \nabla \varphi_{b_i} \mid \varphi_{b_j} \right> W_j
+\end{align*}
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        V u \\
+        V v
+    \end{matrix} \right>
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid V u \right>
+        + \delta{2, c_i} \left< \varphi_{b_i} \mid V v \right> \\
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid W_j V \varphi_{b_j} \delta_{1, c_j} \right>
+        + \delta_{2, c_i} \left< \varphi_{b_i} \mid W_j V \varphi_{b_j} \delta_{2, c_j} \right> \\
+    & = (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \varphi_{b_i} \mid V \varphi_{b_j} \right> W_j
+\end{align*}
+
+Before we consider the nonlinear forms, we note that:
+\begin{align*}
+    u^3 & = (W_j \varphi_{b_j} \delta_{1, c_j})^3 \\
+        & = (W_j \varphi_{b_j} \delta_{1, c_j}) (W_k \varphi_{b_k} \delta_{1, c_k})
+            (W_\ell \varphi_{b_\ell} \delta_{1, c_\ell}) \\
+        & = W_j^3 \varphi_{b_j}^3 \delta_{1, c_j}
+            + 3 W_j^2 W_k \varphi_{b_j}^2 \varphi_{b_k} \delta_{1, c_j} \delta_{1, c_k} (1 - \delta_{j, k}) \\
+            & \qquad + 6 W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
+                \delta_{1, c_j} \delta_{1, c_k} \delta_{1, c_\ell}
+                (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell}) \\
+    u^2 v & = (W_j \varphi_{b_j} \delta_{1, c_j})^2 (W_\ell \varphi_{b_\ell} \delta_{2, c_\ell}) \\
+        & = (W_j \varphi_{b_j} \delta_{1, c_j}) (W_k \varphi_{b_k} \delta_{1, c_k})
+            (W_\ell \varphi_{b_\ell} \delta_{2, c_\ell}) \\
+        & = W_j^3 \varphi_{b_j}^3 \delta_{1, c_j}^2 \delta_{2, c_j}
+            + W_j^2 W_\ell \varphi_{b_j}^2 \varphi_{b_\ell} \delta_{1, c_j}^2 \delta_{2, c_\ell}
+                (1 - \delta_{j, \ell})
+            + 2 W_j^2 W_k \varphi_{b_j}^2 \varphi_{b_k} \delta_{1, c_j} \delta_{1, c_k} \delta_{2, c_j}
+                (1 - \delta_{j, k}) \\
+            & \qquad + 2 W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
+                \delta_{2, c_j} \delta_{1, c_k} \delta_{1, c_\ell}
+                (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell}) \\
+            & \qquad + 2 W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
+                \delta_{1, c_j} \delta_{2, c_k} \delta_{1, c_\ell}
+                (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell}) \\
+            & \qquad + 2 W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
+                \delta_{1, c_j} \delta_{1, c_k} \delta_{2, c_\ell}
+                (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell}) \\
+        & = W_j^2 W_\ell \varphi_{b_j}^2 \varphi_{b_\ell} \delta_{1, c_j} \delta_{2, c_\ell} \\
+            & \qquad + 2 W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
+                (\delta_{1, c_j} \delta_{1, c_k} \delta_{2, c_\ell}
+                    + \delta_{1, c_j} \delta_{2, c_k} \delta_{1, c_\ell}
+                    + \delta_{2, c_j} \delta_{1, c_k} \delta_{1, c_\ell})
+                (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell})
+\end{align*}
+\noindent And conversely:
+\begin{align*}
+    v^3 & = W_j^3 \varphi_{b_j}^3 \delta_{2, c_j}
+            + 3 W_j^2 W_k \varphi_{b_j}^2 \varphi_{b_k} \delta_{2, c_j} \delta_{2, c_k} (1 - \delta_{j, k}) \\
+            & \qquad + 6 W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
+                \delta_{2, c_j} \delta_{2, c_k} \delta_{2, c_\ell}
+                (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell}) \\
+    u v^2 & = W_j^2 W_\ell \varphi_{b_j}^2 \varphi_{b_\ell} \delta_{2, c_j} \delta_{1, c_\ell} \\
+            & \qquad + 2 W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
+                (\delta_{2, c_j} \delta_{2, c_k} \delta_{1, c_\ell}
+                    + \delta_{2, c_j} \delta_{1, c_k} \delta_{2, c_\ell}
+                    + \delta_{1, c_j} \delta_{2, c_k} \delta_{2, c_\ell})
+                (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell})
+\end{align*}
+\noindent Then:
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        u^3 \\
+        v^3
+    \end{matrix} \right>
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid u^3 \right>
+        + \delta_{2, c_i} \left< \varphi_{b_i} \mid v^3 \right> \\
+    & = \delta_{1, c_i} \delta_{1, c_j} \left< \varphi_{b_i} \mid \varphi_{b_j}^3 \right> W_j^3
+        + \delta_{2, c_i} \delta_{2, c_j} \left< \varphi_{b_i} \mid \varphi_{b_j}^3 \right> W_j^3 \\
+        & \qquad + 3 \delta_{1, c_i} \delta_{1, c_j} \delta_{1, c_k} (1 - \delta_{j, k})
+            \left< \varphi_{b_i} \mid \varphi_{b_j}^2 \varphi_{b_k} \right> W_j^2 W_k \\
+        & \qquad + 3 \delta_{2, c_i} \delta_{2, c_j} \delta_{2, c_k} (1 - \delta_{j, k})
+            \left< \varphi_{b_i} \mid \varphi_{b_j}^2 \varphi_{b_k} \right> W_j^2 W_k \\
+        & \qquad + 6 \delta_{1, c_i} \delta_{1, c_j} \delta_{1, c_k} \delta_{1, c_\ell}
+            (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell})
+            \left< \varphi_{b_i} \mid \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell} \right> W_j W_k W_\ell \\
+        & \qquad + 6 \delta_{2, c_i} \delta_{2, c_j} \delta_{2, c_k} \delta_{2, c_\ell}
+            (1 - \delta_{j, k}) (1 - \delta_{j, \ell}) (1 - \delta_{k, \ell})
+            \left< \varphi_{b_i} \mid \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell} \right> W_j W_k W_\ell
 \end{align*}
 
 \end{document}
