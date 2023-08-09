@@ -1,8 +1,4 @@
-#pragma once
-
 #include "prescribed_data.h"
-
-#include <deal.II/base/exceptions.h>
 
 namespace Bidomain::PrescribedData
 {
@@ -20,22 +16,25 @@ namespace Bidomain::PrescribedData
         const Point<dim>& p,
         const unsigned int component) const
     {
-        (void)component;
         AssertIndexRange(component, 2);
 
-        using std::cos, dealii::numbers::PI;
+        using std::cos, numbers::PI;
         const double t = this->get_time();
 
-        double x = t * t * t;
+        double ue = 0.1 * t;
         for (unsigned int i = 0; i < dim; ++i)
         {
-            x *= cos(PI * p[i]);
+            ue *= cos(PI * p[i]);
         }
+
         if (component == 0)
         {
-            x *= -(sigmai + sigmae) / sigmai;
+            return t * ue;
         }
-        return x;
+        else
+        {
+            return ue;
+        }
     }
 
     template<int dim>
@@ -45,16 +44,17 @@ namespace Bidomain::PrescribedData
     {
         AssertDimension(values.size(), 2);
 
-        using std::cos, dealii::numbers::PI;
+        using std::cos, numbers::PI;
         const double t = this->get_time();
 
-        double ue = t * t * t;
+        double ue = 0.1 * t;
         for (unsigned int i = 0; i < dim; ++i)
         {
             ue *= cos(PI * p[i]);
         }
+
         values[1] = ue;
-        values[0] = -(sigmai + sigmae) / sigmai * ue;
+        values[0] = t * ue;
     }
 
     template<int dim>
@@ -77,19 +77,20 @@ namespace Bidomain::PrescribedData
         (void)component;
         AssertIndexRange(component, 1);
 
-        using std::cos, dealii::numbers::PI;
+        using std::cos, numbers::PI;
         const double t = this->get_time();
 
-        double res = -(
-                chi * (sigmai + sigmae) / sigmai * (
-                    3 * Cm + t / Rm
-                ) + 2 * sigmae * PI * PI * t
-            ) * t * t;
+        double f = 0.1 * t * (
+            2 * chi * Cm
+                + chi * t / Rm
+                + dim * PI * PI * sigmai * (t + 1)
+        );
         for (unsigned int i = 0; i < dim; ++i)
         {
-            res *= cos(PI * p[i]);
+            f *= cos(PI * p[i]);
         }
-        return res;
+
+        return f;
     }
 
     template<int dim>
@@ -103,12 +104,25 @@ namespace Bidomain::PrescribedData
 
     template<int dim>
     double ExtracellularRightHandSide<dim>::value(
-        const Point<dim>& /*p*/,
+        const Point<dim>& p,
         const unsigned int component) const
     {
         (void)component;
         AssertIndexRange(component, 1);
 
-        return 0.;
+        using std::cos, numbers::PI;
+        const double t = this->get_time();
+
+        double fe = 0.1 * t * (
+            dim * PI * PI * (
+                sigmai * t + sigmai + sigmae
+            )
+        );
+        for (unsigned int i = 0; i < dim; ++i)
+        {
+            fe *= cos(PI * p[i]);
+        }
+
+        return fe;
     }
 }

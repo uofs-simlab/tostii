@@ -30,6 +30,8 @@
 
 #include <deal.II/distributed/tria.h>
 
+#include <Sacado.hpp>
+
 #include <fstream>
 #include <iostream>
 

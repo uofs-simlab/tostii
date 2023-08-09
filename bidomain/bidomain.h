@@ -49,6 +49,14 @@ namespace Bidomain
             std::vector<types::global_dof_index>& local_dof_indices,
             const LA::MPI::Vector& W,
             LA::MPI::Vector& res);
+        void prescribed_residual(
+            LA::MPI::Vector& res);
+        void prescribed_cell_term(
+            const typename DoFHandler<dim>::active_cell_iterator& cell,
+            FEValues<dim>& fe_v,
+            std::vector<types::global_dof_index>& local_dof_indices,
+            const LA::MPI::Vector& W,
+            LA::MPI::Vector& res);
         void solve(
             const LA::MPI::Vector& W,
             LA::MPI::Vector& delta_W,

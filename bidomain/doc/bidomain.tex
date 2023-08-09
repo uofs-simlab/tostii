@@ -130,6 +130,55 @@ and so, rewriting Equation \ref{eq2}:
 
 \newpage
 
+\section{Toy Problem 2}
+
+We will consider another toy problem,
+to address the fact that $u_e = 0$
+is a simple way to minimize the residual in the previous toy problem:
+\begin{align*}
+    \omega(\bvec{x}) & = \prod_{i = 1}^n \cos(\pi x_i) \\
+    v(t, \bvec{x}) & = t^2 \omega(\bvec{x}) \\
+    u_\text{e}(t, \bvec{x}) & = t \omega(\bvec{x})
+\end{align*}
+\noindent We see that:
+\begin{align*}
+    \Delta \omega & = -n \pi^2 \omega \\
+    \Delta v & = -n \pi^2 v \\
+    \Delta u_\text{e} & = -n \pi^2 u_\text{e}
+\end{align*}
+\noindent And:
+\begin{align*}
+    \frac{\partial v}{\partial t} & = \frac{2}{t} v \\
+        & = 2 u_\text{e}
+\end{align*}
+\noindent So, rewriting the Bidomain equations:
+\begin{align*}
+    f
+        & = \chi C_\text{m} \frac{\partial v}{\partial t}
+            + \frac{\chi}{R_\text{m}} v
+            - \nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e})) \\
+        & = 2 \chi C_\text{m} u_\text{e}
+            + \frac{\chi t}{R_\text{m}} u_\text{e}
+            - \sigma_\text{i} \Delta v
+            - \sigma_\text{i} \Delta u_\text{e} \\
+        & = (2 \chi C_\text{m} + \frac{\chi t}{R_\text{m}}) u_\text{e}
+            + n \pi^2 \sigma_\text{i} v
+            + n \pi^2 \sigma_\text{i} u_\text{e} \\
+        & = (2 \chi C_\text{m} + \frac{\chi t}{R_\text{m}} + n \pi^2 \sigma_\text{i}) u_\text{e}
+            + n \pi^2 \sigma_\text{i} t u_\text{e} \\
+        & = (2 \chi C_\text{m} + \frac{\chi t}{R_\text{m}} + n \pi^2 \sigma_\text{i} (t + 1)) u_\text{e} \\
+    f_\text{e}
+        & = -\nabla \cdot (\sigma_\text{i} \nabla (v + u_\text{e}))
+            - \nabla \cdot (\sigma_\text{e} \nabla u_\text{e}) \\
+        & = -\sigma_\text{i} \Delta v
+            - (\sigma_\text{i} + \sigma_\text{e}) \Delta u_\text{e} \\
+        & = n \pi^2 \sigma_\text{i} v
+            + n \pi^2 (\sigma_\text{i} + \sigma_\text{e}) u_\text{e} \\
+        & = n \pi^2 (\sigma_\text{i} t + \sigma_\text{i} + \sigma_\text{e}) u_\text{e}
+\end{align*}
+
+\newpage
+
 \section{Spatial Discretization}
 
 We consider a set of basis functions $\bvec{\Phi}_i : \mathbb{R}^n \rightarrow \mathbb{R}^2$,

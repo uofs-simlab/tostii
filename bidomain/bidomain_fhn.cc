@@ -1,4 +1,4 @@
-#include "bidomain_linear.inl"
+#include "bidomain_fhn.inl"
 
 int main(int argc, char* argv[])
 try

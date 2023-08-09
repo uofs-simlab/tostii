@@ -17,7 +17,10 @@
 
 #include <deal.II/sundials/kinsol.h>
 
+#include <Sacado.hpp>
+
 #include <iostream>
+#include <fstream>
 #include <filesystem>
 
 #include "bidomain.h"
@@ -117,8 +120,7 @@ namespace Bidomain
         LA::MPI::Vector& res)
     {
         PrescribedData::TransmembraneRightHandSide<dim> transmembrane_rhs(time, param);
-        PrescribedData::TransmembraneRightHandSide<dim> transmembrane_rhs_old(time - time_step, param);
-        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs, extracellular_rhs_old;
+        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs(time, param);
 
         fe_v.reinit(cell);
         cell->get_dof_indices(local_dof_indices);
@@ -130,10 +132,8 @@ namespace Bidomain
         Table<2, double> w_old(n_q_points, 2);
 
         Table<3, Sacado::Fad::DFad<double>> grad_w(n_q_points, 2, dim);
-        Table<3, double> grad_w_old(n_q_points, 2, dim);
 
         Table<2, double> rhs(n_q_points, 2);
-        Table<2, double> rhs_old(n_q_points, 2);
 
         FullMatrix<double> cell_jacobian(dofs_per_cell, dofs_per_cell);
         Vector<double> cell_residual(dofs_per_cell);
@@ -153,7 +153,7 @@ namespace Bidomain
         // compute quadrature points
         const std::vector<Point<dim>>& q_points = fe_v.get_quadrature_points();
 
-        // zero w's and rhs's
+        // zero w's
         for (unsigned int q = 0; q < n_q_points; ++q)
         {
             for (unsigned int c = 0; c < 2; ++c)
@@ -164,11 +164,7 @@ namespace Bidomain
                 for (unsigned int d = 0; d < dim; ++d)
                 {
                     grad_w[q][c][d] = 0.;
-                    grad_w_old[q][c][d] = 0.;
                 }
-
-                rhs[q][c] = 0.;
-                rhs_old[q][c] = 0.;
             }
         }
 
@@ -185,25 +181,178 @@ namespace Bidomain
                 for (unsigned int d = 0; d < dim; ++d)
                 {
                     grad_w[q][c][d] += independent_local_dof_values[i] * fe_v.shape_grad_component(i, q, c)[d];
-                    grad_w_old[q][c][d] += old_solution[local_dof_indices[i]] * fe_v.shape_grad_component(i, q, c)[d];
-                }
-
-                if (c == 0)
-                {
-                    rhs[q][c] += transmembrane_rhs.value(q_points[i]);
-                    rhs_old[q][c] += transmembrane_rhs_old.value(q_points[i]);
-                }
-                else if (c == 1)
-                {
-                    rhs[q][c] += extracellular_rhs.value(q_points[i]);
-                    rhs_old[q][c] += extracellular_rhs_old.value(q_points[i]);
                 }
             }
+
+            rhs[q][0] = transmembrane_rhs.value(q_points[q]);
+            rhs[q][1] = extracellular_rhs.value(q_points[q]);
         }
 
         for (unsigned int i = 0; i < dofs_per_cell; ++i)
         {
             Sacado::Fad::DFad<double> R_i = 0.;
+
+            const unsigned int c_i = fe_v.get_fe().system_to_component_index(i).first;
+
+            for (unsigned int q = 0; q < n_q_points; ++q)
+            {
+                const double JxW = fe_v.JxW(q);
+
+                if (c_i == 0)
+                {
+                    R_i += param.chi * param.Cm / time_step
+                         * fe_v.shape_value_component(i, q, c_i)
+                         * (w[q][c_i] - w_old[q][c_i])
+                         * JxW;
+                }
+
+                if (c_i == 0)
+                {
+                    R_i += param.chi / param.passive.Rm
+                         * fe_v.shape_value_component(i, q, c_i)
+                         * w[q][c_i]
+                         * JxW;
+                }
+
+                for (unsigned int d = 0; d < dim; ++d)
+                {
+                    R_i += param.sigmai
+                         * fe_v.shape_grad_component(i, q, c_i)[d]
+                         * grad_w[q][c_i][d]
+                         * JxW;
+                }
+
+                if (c_i == 1)
+                {
+                    for (unsigned int d = 0; d < dim; ++d)
+                    {
+                        R_i += param.sigmae
+                             * fe_v.shape_grad_component(i, q, c_i)[d]
+                             * grad_w[q][c_i][d]
+                             * JxW;
+                    }
+                }
+
+                R_i -= 1.
+                     * fe_v.shape_value_component(i, q, c_i)
+                     * rhs[q][c_i]
+                     * JxW;
+            }
+
+            for (unsigned int k = 0; k < dofs_per_cell; ++k)
+            {
+                cell_jacobian(i, k) += R_i.fastAccessDx(k);
+            }
+            cell_residual(i) += R_i.val();
+        }
+
+        constraints.distribute_local_to_global(cell_jacobian, cell_residual, local_dof_indices, jacobian_matrix, res);
+    }
+
+    template<int dim>
+    void BidomainProblem<dim>::prescribed_residual(
+        LA::MPI::Vector& res)
+    {
+        FEValues<dim> fe_v(fe, quadrature,
+            update_values | update_gradients | update_quadrature_points | update_JxW_values);
+        
+        const unsigned int dofs_per_cell = fe_v.dofs_per_cell;
+        std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
+        res = 0.;
+
+        LA::MPI::Vector W_local(locally_owned_dofs, mpi_communicator);
+        VectorTools::interpolate(
+            dof_handler,
+            PrescribedData::ExactSolution<dim>(time, param),
+            W_local);
+        
+        LA::MPI::Vector W(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+        W = W_local;
+
+        for (const auto& cell : dof_handler.active_cell_iterators())
+        {
+            if (cell->is_locally_owned())
+            {
+                prescribed_cell_term(cell, fe_v, local_dof_indices, W, res);
+            }
+        }
+
+        res.compress(VectorOperation::add);
+    }
+
+    template<int dim>
+    void BidomainProblem<dim>::prescribed_cell_term(
+        const typename DoFHandler<dim>::active_cell_iterator& cell,
+        FEValues<dim>& fe_v,
+        std::vector<types::global_dof_index>& local_dof_indices,
+        const LA::MPI::Vector& W,
+        LA::MPI::Vector& res)
+    {
+        PrescribedData::ExactSolution<dim> exact_solution_old(time - time_step, param);
+        PrescribedData::TransmembraneRightHandSide<dim> transmembrane_rhs(time, param);
+        PrescribedData::ExtracellularRightHandSide<dim> extracellular_rhs(time, param);
+
+        fe_v.reinit(cell);
+        cell->get_dof_indices(local_dof_indices);
+
+        const unsigned int dofs_per_cell = fe_v.dofs_per_cell;
+        const unsigned int n_q_points = fe_v.n_quadrature_points;
+
+        Table<2, double> w(n_q_points, 2);
+        Table<2, double> w_old(n_q_points, 2);
+        Table<3, double> grad_w(n_q_points, 2, dim);
+        Table<2, double> rhs(n_q_points, 2);
+
+        Vector<double> cell_residual(dofs_per_cell);
+
+        cell_residual = 0.;
+
+        // compute quadrature points
+        const std::vector<Point<dim>>& q_points = fe_v.get_quadrature_points();
+
+        // zero w's
+        for (unsigned int q = 0; q < n_q_points; ++q)
+        {
+            for (unsigned int c = 0; c < 2; ++c)
+            {
+                w[q][c] = 0.;
+                for (unsigned int d = 0; d < dim; ++d)
+                {
+                    grad_w[q][c][d] = 0.;
+                }
+            }
+        }
+
+        // compute w's
+        for (unsigned int q = 0; q < n_q_points; ++q)
+        {
+            for (unsigned int i = 0; i < dofs_per_cell; ++i)
+            {
+                const unsigned int c = fe.system_to_component_index(i).first;
+
+                w[q][c] += W[local_dof_indices[i]] * fe_v.shape_value_component(i, q, c);
+
+                for (unsigned int d = 0; d < dim; ++d)
+                {
+                    grad_w[q][c][d] += W[local_dof_indices[i]] * fe_v.shape_grad_component(i, q, c)[d];
+                }
+
+                if (c == 0)
+                {
+                    rhs[q][c] += transmembrane_rhs.value(q_points[q]);
+                }
+            }
+
+            w_old[q][0] = exact_solution_old.value(q_points[q], 0);
+            w_old[q][1] = exact_solution_old.value(q_points[q], 1);
+            rhs[q][0] = transmembrane_rhs.value(q_points[q]);
+            rhs[q][1] = extracellular_rhs.value(q_points[q]);
+        }
+
+        for (unsigned int i = 0; i < dofs_per_cell; ++i)
+        {
+            double R_i = 0.;
 
             const unsigned int c_i = fe_v.get_fe().system_to_component_index(i).first;
 
@@ -221,17 +370,17 @@ namespace Bidomain
 
                 if (c_i == 0)
                 {
-                    R_i += 0.5 * time_step * param.chi / param.Rm
+                    R_i += time_step * param.chi / param.passive.Rm
                          * fe_v.shape_value_component(i, q, c_i)
-                         * (w[q][c_i] * w_old[q][c_i])
+                         * w[q][c_i]
                          * JxW;
                 }
 
                 for (unsigned int d = 0; d < dim; ++d)
                 {
-                    R_i += 0.5 * time_step * param.sigmai
+                    R_i += time_step * param.sigmai
                          * fe_v.shape_grad_component(i, q, c_i)[d]
-                         * (grad_w[q][c_i][d] + grad_w_old[q][c_i][d])
+                         * grad_w[q][c_i][d]
                          * JxW;
                 }
 
@@ -239,27 +388,23 @@ namespace Bidomain
                 {
                     for (unsigned int d = 0; d < dim; ++d)
                     {
-                        R_i += 0.5 * time_step * param.sigmae
+                        R_i += time_step * param.sigmae
                              * fe_v.shape_grad_component(i, q, c_i)[d]
-                             * (grad_w[q][c_i][d] + grad_w_old[q][c_i][d])
+                             * grad_w[q][c_i][d]
                              * JxW;
                     }
                 }
 
-                R_i -= 0.5 * time_step
+                R_i -= time_step
                      * fe_v.shape_value_component(i, q, c_i)
-                     * (rhs[q][c_i] + rhs_old[q][c_i])
+                     * rhs[q][c_i]
                      * JxW;
             }
 
-            for (unsigned int k = 0; k < dofs_per_cell; ++k)
-            {
-                cell_jacobian(i, k) += R_i.fastAccessDx(k);
-            }
-            cell_residual(i) += R_i.val();
+            cell_residual(i) += R_i;
         }
 
-        constraints.distribute_local_to_global(cell_jacobian, cell_residual, local_dof_indices, jacobian_matrix, res);
+        constraints.distribute_local_to_global(cell_residual, local_dof_indices, res);
     }
 
     template<int dim>
@@ -363,9 +508,14 @@ namespace Bidomain
         solver.residual = [this](const LA::MPI::Vector& evaluation_point, LA::MPI::Vector& residual)
         {
             TimerOutput::Scope timer_scope(this->computing_timer, "Residual");
+
             LA::MPI::Vector relevant_evaluation_point(this->locally_owned_dofs, this->locally_relevant_dofs, this->mpi_communicator);
             relevant_evaluation_point = evaluation_point;
             this->compute_residual(relevant_evaluation_point, residual);
+
+            LA::MPI::Vector pres(this->locally_owned_dofs, this->mpi_communicator);
+            this->prescribed_residual(pres);
+
             return 0;
         };
 

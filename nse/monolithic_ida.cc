@@ -29,6 +29,8 @@
 #include <deal.II/sundials/kinsol.h>
 #include <deal.II/sundials/ida.h>
 
+#include <Sacado.hpp>
+
 #include <deal.II/distributed/tria.h>
 
 #include <fstream>

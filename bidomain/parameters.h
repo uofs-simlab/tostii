@@ -2,34 +2,15 @@
 
 #include <deal.II/base/parameter_handler.h>
 
+#include <tostii/time_stepping/runge_kutta.h>
+#include <tostii/time_stepping/operator_split.h>
+
 #include <array>
 #include <unordered_map>
 
 namespace Bidomain::Parameters
 {
     using namespace dealii;
-
-    struct time_stepper
-    {
-        enum type
-            : unsigned int
-        {
-            BACKWARD_EULER,
-            CRANK_NICOLSON,
-            INVALID
-        };
-
-        static const std::array<std::pair<std::string, double>, INVALID> info;
-        static const std::unordered_map<std::string, type> values;
-
-        static Patterns::Selection pattern();
-
-        static type from_string(const std::string& name);
-        static const std::string& to_string(const type value);
-        static double to_theta(const type value);
-    };
-
-    typedef time_stepper::type time_stepper_t;
 
     struct FEMParameters
     {
@@ -47,7 +28,27 @@ namespace Bidomain::Parameters
         unsigned int n_time_steps;
         unsigned int initial_time_step;
         double final_time;
-        time_stepper_t time_stepping;
+        tostii::TimeStepping::runge_kutta_method membrane_stepper;
+        tostii::TimeStepping::runge_kutta_method tissue_stepper;
+        tostii::TimeStepping::os_method_t<double> os_stepper;
+
+        static void declare_parameters(ParameterHandler& prm);
+        void parse_parameters(ParameterHandler& prm);
+    };
+
+    struct PassiveParameters
+    {
+        double Rm;
+
+        static void declare_parameters(ParameterHandler& prm);
+        void parse_parameters(ParameterHandler& prm);
+    };
+
+    struct FHNParameters
+    {
+        double epsilon;
+        double beta;
+        double gamma;
 
         static void declare_parameters(ParameterHandler& prm);
         void parse_parameters(ParameterHandler& prm);
@@ -57,10 +58,15 @@ namespace Bidomain::Parameters
     {
         double chi;
         double Cm;
-        double Rm;
         double sigmai;
         double sigmae;
-        
+        double sigmaix;
+        double sigmaiy;
+        double sigmaex;
+        double sigmaey;
+        PassiveParameters passive;
+        FHNParameters fhn;
+
         static void declare_parameters(ParameterHandler& prm);
         void parse_parameters(ParameterHandler& prm);
     };
