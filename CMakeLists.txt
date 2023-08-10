@@ -40,3 +40,5 @@ add_subdirectory("nse")
 add_subdirectory("monodomain")
 add_subdirectory("bidomain")
 add_subdirectory("neutron")
+
+add_subdirectory("doc")
