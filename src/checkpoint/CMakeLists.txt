@@ -1,9 +1,11 @@
 
 set(INCLUDE_DIR "${TOSTII_INCLUDE_DIR}/checkpoint")
 set(SOURCES
-    "save_manager.cc")
+    "save_manager.cc"
+    "checkpointer.cc")
 set(HEADERS
-    "${INCLUDE_DIR}/save_manager.h")
+    "${INCLUDE_DIR}/save_manager.h"
+    "${INCLUDE_DIR}/checkpointer.h")
 
 add_library(tostii_checkpoint OBJECT ${SOURCES} ${HEADERS})
 deal_II_setup_target(tostii_checkpoint)
