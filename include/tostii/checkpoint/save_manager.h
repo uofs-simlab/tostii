@@ -2,17 +2,20 @@
 
 #include <deal.II/base/mpi.h>
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/access.hpp>
 
+#include <variant>
 #include <memory>
-#include <deque>
+#include <regex>
 #include <map>
 #include <fstream>
 #include <filesystem>
 
 namespace tostii
 {
+    template<typename Archive>
+    struct ArchiveTraits;
+
     /**
      * Manages checkpoint files.
      * 
@@ -29,6 +32,8 @@ namespace tostii
     class SaveManager
     {
     public:
+        friend class boost::serialization::access;
+
         /**
          * Default constructor.
          * 
@@ -95,27 +100,40 @@ namespace tostii
         /**
          * Returns the last value of \p counter passed to save_file().
          */
-        unsigned int last_checkpoint() const noexcept;
+        constexpr unsigned int last_checkpoint() const noexcept;
+        /**
+         * Returns the number of tracked checkpoints
+         */
+        constexpr unsigned int n_checkpoints() const noexcept;
 
         /**
          * Opens the latest checkpoint file for loading.
          * 
          * This function opens the latest checkpoint file
          * as an IArchive and returns it as a `shared_ptr`.
+         * 
+         * close_file() must be called between calling this function
+         * and calling either this function or save_file().
          */
-        std::shared_ptr<IArchive> load_file();
+        IArchive& load_file();
         /**
          * Opens a checkpoint file for saving.
          * 
          * This function opens a file suitable for saving a checkpoint.
          * \p counter must be greater than the value returned by last_checkpoint().
          * 
-         * The `shared_ptr` returned by this function is given a custom deleter
-         * which deletes the oldest checkpoint if there would be more checkpoints
-         * than permitted by \p n_saves .
+         * close_file() must be called between calling this function
+         * and calling either this function or load_file().
          */
-        std::shared_ptr<OArchive> save_file(
+        OArchive& save_file(
             const unsigned int counter);
+        /**
+         * Closes the currently open file.
+         * 
+         * This function must be called after calling
+         * either load_file() or save_file().
+         */
+        void close_file();
 
         /**
          * Loads this object from a Boost archive.
@@ -137,19 +155,45 @@ namespace tostii
             const unsigned int version);
 
     private:
-        static constexpr const char info[] = "info.txt";
-        static constexpr const char save_pattern[] = "save_{:0{}d}.dat";
-        static constexpr const char group_save_pattern[] = "save_{:0{}d}.{:0{}d}.dat";
-        static constexpr const char psave_pattern[] = "save_{:0{}d}.pdat";
+        static constexpr const char info_filename[] = "info.txt";
+        static constexpr const char save_pattern[] = "save_%%0%dd.dat";
+        static constexpr const char group_save_pattern[] = "save_%%0%dd.%%0%dd.dat";
+        static constexpr const char psave_pattern[] = "save_%%0%dd.txt";
+
+        static const std::regex info_line_re;
+        static const std::regex save_line_re;
+
+        constexpr bool is_parallel() const noexcept;
+        inline bool is_rank_zero() const;
+
+        void synchronize() const;
+
+        void read_directory();
+        void initialize_directory();
+
+        void commit() const;
+        void commit_save(
+            const unsigned int counter,
+            const std::string& fname) const;
+        void commit_delete(
+            const std::string& fname) const;
+
+        std::string load_filename();
+        std::string save_filename();
 
         MPI_Comm mpi_communicator;
 
         std::filesystem::path path;
         unsigned int n_digits_for_counter;
         unsigned int n_saves;
-        unsigned int n_groups;
 
         unsigned int last_counter;
-        std::deque<unsigned int> tracked_saves;
+        std::map<unsigned int, std::string> tracked_saves;
+
+        std::variant<
+            std::monostate,
+            std::pair<std::ifstream, std::unique_ptr<IArchive>>,
+            std::pair<std::ofstream, std::unique_ptr<OArchive>>
+            > open_file;
     };
 }
