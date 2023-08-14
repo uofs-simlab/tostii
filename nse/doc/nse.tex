@@ -10,6 +10,7 @@
 \newcommand{\ii}{\mathrm{i}}
 \newcommand{\ee}{\mathrm{e}}
 \newcommand{\dd}{\mathrm{d}}
+\newcommand{\TT}{\mathrm{T}}
 
 \begin{document}
 
@@ -131,8 +132,8 @@ Then, we have that:
 Then, we multiply and integrate the system with a basis function $\bvec{\Phi}_i$:
 \begin{align*}
     \left< \bvec{\Phi}_i \mid \begin{matrix}
-            \ii \partial_t v - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u \\
-            -\ii \partial_t u - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v
+            \partial_t v - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u \\
+            -\partial_t u - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v
         \end{matrix} \right> & = 0 \\
     \ii \left< \bvec{\Phi}_i \mid \begin{matrix}
             \partial_t v \\
@@ -194,7 +195,7 @@ for all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$. So:
     & = -\delta_{1, c_i} \left< \nabla \varphi_{b_i} \mid W_j \nabla \varphi_{b_j} \delta_{1, c_j} \right>
         - \delta_{2, c_i} \left< \nabla \varphi_{b_i} \mid W_j \nabla \varphi_{b_j} \delta_{2, c_j} \right> \\
     & = -(\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
-        \left< \nabla \varphi_{b_i} \mid \varphi_{b_j} \right> W_j
+        \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> W_j
 \end{align*}
 \begin{align*}
     \left< \bvec{\Phi}_i \mid \begin{matrix}
@@ -208,21 +209,91 @@ for all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$. So:
     & = (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
         \left< \varphi_{b_i} \mid V \varphi_{b_j} \right> W_j
 \end{align*}
+\noindent We will not use the fact that $\bvec{w} = W_j \bvec{\Phi}_j$
+in considering the nonlinear forms at this time.
 
-Before we consider the nonlinear forms, we note that:
+So:
 \begin{align*}
-    u^3 & = (W_j \varphi_{b_j} \delta_{1, c_j})^3 \\
-        & = W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
-            \delta_{1, c_j} \delta_{1, c_k} \delta_{1, c_\ell} \\
-    u^2 v & = (W_j \varphi_{b_j} \delta_{1, c_j})^2 (W_j \varphi_{b_j} \delta_{2, c_j}) \\
-        & = W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
-            \delta_{1, c_j} \delta_{1, c_k} \delta_{2, c_\ell} \\
-    u v^2 & = (W_j \varphi_{b_j} \delta_{1, c_j}) (W_j \varphi_{b_j} \delta_{2, c_j})^2 \\
-        & = W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
-            \delta_{1, c_j} \delta_{2, c_k} \delta_{2, c_\ell} \\
-    v^3 & = (W_j \varphi_{b_j} \delta_{1, c_j})^3 \\
-        & = W_j W_k W_\ell \varphi_{b_j} \varphi_{b_k} \varphi_{b_\ell}
-            \delta_{2, c_j} \delta_{2, c_k} \delta_{2, c_\ell}
+    0 & = (\delta_{1, c_i} \delta_{2, c_j} - \delta_{2, c_i} \delta_{1, c_j})
+            \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \dot{W}_j \\
+        & \qquad + \frac{1}{2} (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+            \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> W_j \\
+        & \qquad + (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+            \left< \varphi_{b_i} \mid V \varphi_{b_j} \right> W_j \\
+        & \qquad + \kappa \delta_{1, c_i} \left< \varphi_{b_i} \mid u^3 + u v^2 \right> \\
+        & \qquad + \kappa \delta_{2, c_i} \left< \varphi_{b_i} \mid v^3 + u^2 v \right>
+\end{align*}
+\noindent If we define:
+\begin{align*}
+    M_{ij} & = (\delta_{1, c_i} \delta_{2, c_j} - \delta_{2, c_i} \delta_{1, c_j})
+        \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \\
+    A_{ij} & = \frac{1}{2} (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> \\
+    B_{ij} & = (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \varphi_{b_i} \mid V \varphi_{b_j} \right> \\
+    C_i & = \kappa \delta_{1, c_i} \left< \varphi_{b_i} \mid u^3 + u v^2 \right>
+        + \kappa \delta_{2, c_i} \left< \varphi_{b_i} \mid v^3 + u^2 v \right>
+\end{align*}
+\noindent We rewrite the above equation as:
+\begin{align*}
+    \brvec{0} & = \bvec{M} \dot{\bvec{W}}
+        + (\bmat{A} + \bmat{B}) \bvec{W}
+        + \bvec{C}
+\end{align*}
+
+\newpage
+
+\section{Time Stepping}
+
+In order to solve the monolithic system using an implicit Runge-Kutta method,
+we rewrite the equation from previous section:
+\begin{align*}
+    \bmat{M} \dot{\bvec{W}}
+        & = -(\bmat{A} + \bmat{B}) \bvec{W}
+            - \bvec{C} \\
+    \dot{\bvec{W}}
+        & = -\bmat{M}^{-1} (\bmat{A} + \bmat{B}) \bvec{W}
+            - \bmat{M}^{-1} \bvec{C} \\
+        & = \bvec{F}(\bvec{W})
+\end{align*}
+\noindent We must compute the action of
+$(\brmat{I} - \tau \brmat{J}[\bvec{F}])^{-1}$
+on a vector. We have that:
+\begin{align*}
+    \brmat{J}[\bvec{F}]
+        & = \frac{\partial \bvec{F}}{\partial \bvec{W}} \\
+        & = -\frac{\partial}{\partial \bvec{W}}
+                (\bmat{M}^{-1} (\bmat{A} + \bmat{B}) \bvec{W})
+            - \frac{\partial}{\partial \bvec{W}}
+                (\bmat{M}^{-1} \bvec{C}) \\
+        & = -\bmat{M}^{-1} (\bmat{A} + \bmat{B})
+            - \bmat{M}^{-1} \brmat{J}[\bvec{C}]
+\end{align*}
+
+So, we must determine $\brmat{J}[\bvec{C}]$:
+\begin{align*}
+    \frac{\partial C_i}{\partial W_j}
+        & = \frac{\partial}{\partial W_j}
+            (\kappa \delta_{1, c_i} \left< \varphi_{b_i} \mid u^3 + u v^2 \right>
+                + \kappa \delta_{2, c_i} \left< \varphi_{b_i} \mid v^3 + u^2 v \right>)
+\end{align*}
+\noindent So, consider:
+\begin{align*}
+    \frac{\partial}{\partial W_k} \left< \varphi_{b_i} \mid u^3 \right>
+        & = \frac{\partial}{\partial W_k}
+            \left< \varphi_{b_i} \mid (W_j \varphi_{b_j} \delta_{1, c_j})^3 \right> \\
+        & = \left< \varphi_{b_i} \mid \frac{\partial}{\partial W_k} (W_j \varphi_{b_j} \delta_{1, c_j})^3 \right>
+\end{align*}
+\noindent What is the coefficient of $W_k$ in $(W_j \varphi_{b_j} \delta_{1, c_j})^3$?
+First, note that:
+\begin{align*}
+    (W_j \varphi_{b_j} \delta_{1, c_j})^3
+        & = (W_{j_1} \varphi_{b_{j_1}} \delta_{1, c_{j_1}})
+            (W_{j_2} \varphi_{b_{j_2}} \delta_{1, c_{j_2}})
+            (W_{j_3} \varphi_{b_{j_3}} \delta_{1, c_{j_3}}) \\
+        & = W_{j_1} W_{j_2} W_{j_3}
+            \varphi_{b_{j_1}} \varphi_{b_{j_2}} \varphi_{b_{j_3}}
+            \delta_{1, c_{j_1}} \delta_{1, c_{j_2}} \delta_{1, c_{j_3}}
 \end{align*}
 
 \end{document}
