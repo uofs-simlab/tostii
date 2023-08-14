@@ -13,6 +13,16 @@
 
 namespace tostii
 {
+    /**
+     * Add instantiations of this struct with the field:
+     * ```c++
+     * static std::ios::openmode stream_flags;
+     * ```
+     * to generate SaveManager code for other archive types.
+     * These flags are used when opening archive I/O streams.
+     * Instantiations are provided for boost's
+     * `text_[io]archive` and `binary_[io]archive`.
+     */
     template<typename Archive>
     struct ArchiveTraits;
 
@@ -32,8 +42,6 @@ namespace tostii
     class SaveManager
     {
     public:
-        friend class boost::serialization::access;
-
         /**
          * Default constructor.
          * 
@@ -110,7 +118,7 @@ namespace tostii
          * Opens the latest checkpoint file for loading.
          * 
          * This function opens the latest checkpoint file
-         * as an IArchive and returns it as a `shared_ptr`.
+         * as an IArchive.
          * 
          * close_file() must be called between calling this function
          * and calling either this function or save_file().
@@ -134,6 +142,18 @@ namespace tostii
          * either load_file() or save_file().
          */
         void close_file();
+        /**
+         * Closes the currently owned file in the event of an error.
+         * 
+         * If an error occurs while saving,
+         * this function can be called to cancel the checkpoint,
+         * i.e., the file is closed and removed.
+         * This function cannot be used to cancel loading a checkpoint.
+         */
+        void abort_file();
+
+    private:
+        friend class boost::serialization::access;
 
         /**
          * Loads this object from a Boost archive.
@@ -154,7 +174,6 @@ namespace tostii
             OArchive& ar,
             const unsigned int version);
 
-    private:
         static constexpr const char info_filename[] = "info.txt";
         static constexpr const char save_pattern[] = "save_%%0%dd.dat";
         static constexpr const char group_save_pattern[] = "save_%%0%dd.%%0%dd.dat";
@@ -178,8 +197,8 @@ namespace tostii
         void commit_delete(
             const std::string& fname) const;
 
-        std::string load_filename();
-        std::string save_filename();
+        std::string load_filename() const;
+        std::string save_filename() const;
 
         MPI_Comm mpi_communicator;
 

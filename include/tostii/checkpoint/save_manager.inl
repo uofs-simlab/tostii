@@ -6,8 +6,6 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
 
 #include <string>
 #include <iterator>
@@ -41,25 +39,11 @@ namespace tostii
         static constexpr std::ios::openmode stream_flags = std::ios::binary;
     };
 
-    template<>
-    struct ArchiveTraits<boost::archive::xml_iarchive>
-    {
-        static constexpr std::ios::openmode stream_flags = (std::ios::openmode)0;
-    };
-
-    template<>
-    struct ArchiveTraits<boost::archive::xml_oarchive>
-    {
-        static constexpr std::ios::openmode stream_flags = (std::ios::openmode)0;
-    };
+    template<typename IArchive, typename OArchive>
+    const std::regex SaveManager<IArchive, OArchive>::info_line_re("^\\[(\\d+)\\] (.*)$");
 
     template<typename IArchive, typename OArchive>
-    const std::regex SaveManager<IArchive, OArchive>::info_line_re
-        = "^\\[(\\d+)\\] (.*)$";
-
-    template<typename IArchive, typename OArchive>
-    const std::regex SaveManager<IArchive, OArchive>::save_line_re
-        = "^\\[(\\d+)\\] (.*)";
+    const std::regex SaveManager<IArchive, OArchive>::save_line_re("^\\[(\\d+)\\] (.*)$");
 
     template<typename IArchive, typename OArchive>
     SaveManager<IArchive, OArchive>::SaveManager()
@@ -160,8 +144,8 @@ namespace tostii
             std::smatch match;
             while (std::getline(info, line))
             {
-                if (line.size()) continue;
-                if (!std::regex_match(line, info_line_re, match))
+                if (line.empty()) continue;
+                if (!std::regex_match(line, match, info_line_re))
                 {
                     throw std::runtime_error((path / info_filename).string() + ": invalid file");
                 }
@@ -222,7 +206,7 @@ namespace tostii
     template<typename IArchive, typename OArchive>
     void SaveManager<IArchive, OArchive>::commit() const
     {
-        if (!is_zero_rank())
+        if (!is_rank_zero())
         {
             synchronize();
             return;
@@ -236,7 +220,7 @@ namespace tostii
             while (std::getline(fp, line))
             {
                 if (line.empty()) continue;
-                if (!std::regex_match(line, info_line_re, match))
+                if (!std::regex_match(line, match, info_line_re))
                 {
                     throw std::runtime_error((path / info_filename).string() + ": invalid file");
                 }
@@ -279,6 +263,8 @@ namespace tostii
         {
             commit_delete(fname);
         }
+
+        synchronize();
     }
 
     template<typename IArchive, typename OArchive>
@@ -314,26 +300,25 @@ namespace tostii
         while (std::getline(fp, line))
         {
             if (line.empty()) continue;
-            if (!std::regex_match(line, save_line_re, match))
+            if (!std::regex_match(line, match, save_line_re))
             {
                 throw std::runtime_error((path / fname).string() + ": invalid file");
             }
 
-            std::filesystem::remove(path / match[2]);
+            std::filesystem::remove(path / match[2].str());
         }
         std::filesystem::remove(path / fname);
     }
 
     template<typename IArchive, typename OArchive>
-    std::string SaveManager<IArchive, OArchive>::load_filename()
+    std::string SaveManager<IArchive, OArchive>::load_filename() const
     {
-        if (n_checkpointer() == 0)
+        if (n_checkpoints() == 0)
         {
-            throw std::runtime_error(path.str() + ": no checkpoint to load");
+            throw std::runtime_error(path.string() + ": no checkpoint to load");
         }
 
-        auto nh = tracked_saves.extract(last_checkpoint());
-        const std::string& fname = nh.mapped();
+        const std::string& fname = tracked_saves.at(last_checkpoint());
 
         if (!is_parallel())
         {
@@ -349,7 +334,7 @@ namespace tostii
             while (std::getline(psave, line))
             {
                 if (line.empty()) continue;
-                if (!std::regex_match(line, save_line_re, match))
+                if (!std::regex_match(line, match, save_line_re))
                 {
                     throw std::runtime_error((path / fname).string() + ": invalid file");
                 }
@@ -368,7 +353,7 @@ namespace tostii
     {
         if (open_file.index() != 0)
         {
-            throw std::runtime_error(path.str() + ": invalid usage");
+            throw std::runtime_error(path.string() + ": invalid usage");
         }
 
         const std::string fname = load_filename();
@@ -376,13 +361,13 @@ namespace tostii
         auto& [stream, ar_ptr] = std::get<1>(open_file);
         auto stream_flags = ArchiveTraits<IArchive>::stream_flags;
         stream.open(path / fname, stream_flags);
-        ar_ptr = new IArchive(stream);
+        ar_ptr.reset(new IArchive(stream));
 
         return *ar_ptr;
     }
 
     template<typename IArchive, typename OArchive>
-    std::string SaveManager<IArchive, OArchive>::save_filename()
+    std::string SaveManager<IArchive, OArchive>::save_filename() const
     {
         if (!is_parallel())
         {
@@ -391,42 +376,22 @@ namespace tostii
                 << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
                 << ".dat";
             
-            std::string fname_str = fname.str();
-            tracked_saves.insert_or_assign(last_counter, fname_str);
-            commit();
-            return fname_str;
+            return fname.str();
         }
         else
         {
+            using dealii::Utilities::MPI::n_mpi_processes,
+                dealii::Utilities::MPI::this_mpi_process;
+            
             std::stringstream pfname;
             pfname << "save_"
                 << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
-                << ".txt";
+                << '.'
+                << std::setw(int(std::log10(n_mpi_processes(mpi_communicator))) + 1)
+                << std::setfill('0') << this_mpi_process(mpi_communicator)
+                << ".dat";
             
-            const std::string pfname_str = pfname.str();
-            tracked_saves.insert_or_assign(last_counter, pfname_str);
-            commit();
-
-            std::ifstream psave(path / pfname);
-            std::string line;
-            std::smatch match;
-            using dealii::Utilities::MPI::this_mpi_process;
-            const unsigned int rank = this_mpi_process(mpi_communicator);
-            while (std::getline(psave, line))
-            {
-                if (line.empty()) continue;
-                if (!std::regex_match(line, save_line_re, match))
-                {
-                    throw std::runtime_error((path / pfname_str).string() + ": invalid file");
-                }
-
-                if (std::stoul(match[1]) == rank)
-                {
-                    return match[2];
-                }
-            }
-
-            throw std::runtime_error((path / pfname_str).string() + ": invalid file");
+            return pfname.str();
         }
     }
 
@@ -436,21 +401,20 @@ namespace tostii
     {
         if (counter < last_counter)
         {
-            throw std::invalid_argument(path.str() + ": counter must increase");
+            throw std::invalid_argument(path.string() + ": counter must increase");
         }
-        last_counter = counter;
-
         if (open_file.index() != 0)
         {
-            throw std::runtime_error(path.str() + ": invalid usage");
+            throw std::runtime_error(path.string() + ": invalid usage");
         }
 
-        const std::string fname = save_filename(counter);
+        last_counter = counter;
+        const std::string fname = save_filename();
         
         auto& [stream, ar_ptr] = std::get<2>(open_file);
         auto stream_flags = ArchiveTraits<OArchive>::stream_flags;
         stream.open(path / fname, stream_flags);
-        ar_ptr = new OArchive(stream);
+        ar_ptr.reset(new OArchive(stream));
 
         return *ar_ptr;
     }
@@ -467,20 +431,67 @@ namespace tostii
                 auto& [stream, ar_ptr] = std::get<1>(open_file);
                 ar_ptr.reset();
                 stream.close();
+                break;
             }
-            break;
         case 2:
             {
                 auto& [stream, ar_ptr] = std::get<2>(open_file);
                 ar_ptr.reset();
                 stream.close();
-            }
-            if (tracked_saves.size() > n_saves)
-            {
-                tracked_saves.erase(tracked_saves.begin());
+
+                {
+                    std::stringstream fname;
+                    fname << "save_"
+                        << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
+                        << ".txt";
+                    tracked_saves[last_counter] = fname.str();
+                }
+                if (n_saves > 0 && tracked_saves.size() > n_saves)
+                {
+                    tracked_saves.erase(tracked_saves.begin());
+                }
                 commit();
+                break;
             }
-            break;
+        default:
+            /* unreachable - guaranteed to throw */
+            AssertIndexRange(open_file.index(), 3);
+        }
+    }
+
+    template<typename IArchive, typename OArchive>
+    void SaveManager<IArchive, OArchive>::abort_file()
+    {
+        switch (open_file.index())
+        {
+        case 0:
+            throw std::runtime_error(path.string() + ": invalid usage");
+        case 1:
+            throw std::runtime_error(path.string() + ": cannot abort load");
+        case 2:
+            {
+                auto& [stream, ar_ptr] = std::get<2>(open_file);
+                ar_ptr.reset();
+                stream.close();
+
+                {
+                    using dealii::Utilities::MPI::n_mpi_processes,
+                        dealii::Utilities::MPI::this_mpi_process;
+
+                    std::stringstream fname;
+                    fname << "save_"
+                        << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
+                        << '.'
+                        << std::setw(int(std::log10(n_mpi_processes(mpi_communicator))) + 1)
+                        << std::setfill('0') << this_mpi_process(mpi_communicator)
+                        << ".dat";
+                    std::filesystem::remove(path / fname.str());
+                }
+
+                auto it = tracked_saves.end();
+                last_counter = (--it)->first;
+                break;
+            }
         default:
             /* unreachable - guaranteed to throw */
             AssertIndexRange(open_file.index(), 3);
@@ -490,27 +501,26 @@ namespace tostii
     template<typename IArchive, typename OArchive>
     void SaveManager<IArchive, OArchive>::serialize(
         IArchive& ar,
-        const unsigned int version)
+        const unsigned int)
     {
         ar & last_counter;
-
-        if (tracked_saves.find(last_counter) == tracked_saves.end())
-        {
-            throw std::runtime_error(path.string() + ": no such checkpoint");
-        }
 
         auto sentry = tracked_saves.begin(),
             it = tracked_saves.end();
         while (it != sentry && (--it)->first > last_counter);
 
+        if (it->first != last_counter)
+        {
+            throw std::runtime_error(path.string() + ": no such checkpoint");
+        }
+
         tracked_saves.erase(it, tracked_saves.end());
-        commit();
     }
 
     template<typename IArchive, typename OArchive>
     void SaveManager<IArchive, OArchive>::serialize(
         OArchive& ar,
-        const unsigned int version)
+        const unsigned int)
     {
         ar & last_counter;
     }

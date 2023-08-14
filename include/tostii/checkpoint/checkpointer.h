@@ -7,8 +7,6 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
 
 namespace tostii
 {
@@ -19,8 +17,6 @@ namespace tostii
     class Checkpointer
     {
     public:
-        friend class boost::serialization::access;
-
         /**
          * Default constructor.
          * 
@@ -35,6 +31,17 @@ namespace tostii
         template<typename PathType>
         Checkpointer(
             const PathType& path,
+            const unsigned int n_saves = 0,
+            const unsigned int n_digits_for_counter = 1);
+        /**
+         * Constructor.
+         * 
+         * Calls initialize().
+         */
+        template<typename PathType>
+        Checkpointer(
+            const PathType& path,
+            const MPI_Comm mpi_communicator,
             const unsigned int n_saves = 0,
             const unsigned int n_digits_for_counter = 1);
 
@@ -72,6 +79,16 @@ namespace tostii
          */
         void checkpoint(
             const unsigned int counter);
+        
+        /**
+         * Loads the latest checkpoint.
+         * 
+         * A checkpoint should exist before calling this function.
+         */
+        void load();
+
+    private:
+        friend class boost::serialization::access;
 
         /**
          * Serializes (loads) this object.
@@ -93,7 +110,6 @@ namespace tostii
             OArchive& ar,
             const unsigned int version);
 
-    private:
         SaveManager<IArchive, OArchive> save_manager;
     };
 
@@ -103,7 +119,4 @@ namespace tostii
     using BinaryCheckpointer = Checkpointer<
         boost::archive::binary_iarchive,
         boost::archive::binary_oarchive>;
-    using XMLCheckpointer = Checkpointer<
-        boost::archive::xml_iarchive,
-        boost::archive::xml_oarchive>;
 }
