@@ -9,30 +9,8 @@ namespace tostii
     { }
 
     template<typename IArchive, typename OArchive>
-    template<typename PathType>
-    Checkpointer<IArchive, OArchive>::Checkpointer(
-        const PathType& path,
-        const unsigned int n_saves,
-        const unsigned int n_digits_for_counter)
-    {
-        initialize(path, n_saves, n_digits_for_counter);
-    }
-
-    template<typename IArchive, typename OArchive>
-    template<typename PathType>
-    Checkpointer<IArchive, OArchive>::Checkpointer(
-        const PathType& path,
-        const MPI_Comm mpi_communicator,
-        const unsigned int n_saves,
-        const unsigned int n_digits_for_counter)
-    {
-        initialize(path, mpi_communicator, n_saves, n_digits_for_counter);
-    }
-
-    template<typename IArchive, typename OArchive>
-    template<typename PathType>
     void Checkpointer<IArchive, OArchive>::initialize(
-        const PathType& path,
+        const std::string& path,
         const unsigned int n_saves,
         const unsigned int n_digits_for_counter)
     {
@@ -45,19 +23,30 @@ namespace tostii
     }
 
     template<typename IArchive, typename OArchive>
-    template<typename PathType>
     void Checkpointer<IArchive, OArchive>::initialize(
-        const PathType& path,
+        const std::string& path,
         const MPI_Comm mpi_communicator,
         const unsigned int n_saves,
         const unsigned int n_digits_for_counter)
     {
-        save_manager.initialize(path, n_saves, n_digits_for_counter);
+        save_manager.initialize(path, mpi_communicator, n_saves, n_digits_for_counter);
 
         if (save_manager.n_checkpoints() > 0)
         {
             load();
         }
+    }
+
+    template<typename IArchive, typename OArchive>
+    unsigned int Checkpointer<IArchive, OArchive>::last_checkpoint() const noexcept
+    {
+        return save_manager.last_checkpoint();
+    }
+
+    template<typename IArchive, typename OArchive>
+    unsigned int Checkpointer<IArchive, OArchive>::n_checkpoints() const noexcept
+    {
+        return save_manager.n_checkpoints();
     }
 
     template<typename IArchive, typename OArchive>

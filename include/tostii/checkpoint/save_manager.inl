@@ -50,9 +50,8 @@ namespace tostii
     { }
 
     template<typename IArchive, typename OArchive>
-    template<typename PathType>
     SaveManager<IArchive, OArchive>::SaveManager(
-        const PathType& path,
+        const std::string& path,
         const unsigned int n_saves,
         const unsigned int n_digits_for_counter)
     {
@@ -60,9 +59,8 @@ namespace tostii
     }
 
     template<typename IArchive, typename OArchive>
-    template<typename PathType>
     SaveManager<IArchive, OArchive>::SaveManager(
-        const PathType& path,
+        const std::string& path,
         const MPI_Comm mpi_communicator,
         const unsigned int n_saves,
         const unsigned int n_digits_for_counter)
@@ -71,9 +69,8 @@ namespace tostii
     }
 
     template<typename IArchive, typename OArchive>
-    template<typename PathType>
     void SaveManager<IArchive, OArchive>::initialize(
-        const PathType& path,
+        const std::string& path,
         const unsigned int n_saves,
         const unsigned int n_digits_for_counter)
     {
@@ -89,9 +86,8 @@ namespace tostii
     }
 
     template<typename IArchive, typename OArchive>
-    template<typename PathType>
     void SaveManager<IArchive, OArchive>::initialize(
-        const PathType& path,
+        const std::string& path,
         const MPI_Comm mpi_communicator,
         const unsigned int n_saves,
         const unsigned int n_digits_for_counter)
@@ -192,13 +188,13 @@ namespace tostii
     }
 
     template<typename IArchive, typename OArchive>
-    constexpr unsigned int SaveManager<IArchive, OArchive>::last_checkpoint() const noexcept
+    unsigned int SaveManager<IArchive, OArchive>::last_checkpoint() const noexcept
     {
         return last_counter;
     }
 
     template<typename IArchive, typename OArchive>
-    constexpr unsigned int SaveManager<IArchive, OArchive>::n_checkpoints() const noexcept
+    unsigned int SaveManager<IArchive, OArchive>::n_checkpoints() const noexcept
     {
         return tracked_saves.size();
     }
@@ -351,14 +347,16 @@ namespace tostii
     template<typename IArchive, typename OArchive>
     IArchive& SaveManager<IArchive, OArchive>::load_file()
     {
-        if (open_file.index() != 0)
+        if (open_file.get() != nullptr)
         {
             throw std::runtime_error(path.string() + ": invalid usage");
         }
 
         const std::string fname = load_filename();
-
-        auto& [stream, ar_ptr] = std::get<1>(open_file);
+        
+        OpenLoadFile* file_ptr = new OpenLoadFile;
+        open_file.reset(file_ptr);
+        auto& [stream, ar_ptr] = *file_ptr;
         auto stream_flags = ArchiveTraits<IArchive>::stream_flags;
         stream.open(path / fname, stream_flags);
         ar_ptr.reset(new IArchive(stream));
@@ -403,7 +401,7 @@ namespace tostii
         {
             throw std::invalid_argument(path.string() + ": counter must increase");
         }
-        if (open_file.index() != 0)
+        if (open_file.get() != nullptr)
         {
             throw std::runtime_error(path.string() + ": invalid usage");
         }
@@ -411,7 +409,9 @@ namespace tostii
         last_counter = counter;
         const std::string fname = save_filename();
         
-        auto& [stream, ar_ptr] = std::get<2>(open_file);
+        OpenSaveFile* file_ptr = new OpenSaveFile;
+        open_file.reset(file_ptr);
+        auto& [stream, ar_ptr] = *file_ptr;
         auto stream_flags = ArchiveTraits<OArchive>::stream_flags;
         stream.open(path / fname, stream_flags);
         ar_ptr.reset(new OArchive(stream));
@@ -422,79 +422,72 @@ namespace tostii
     template<typename IArchive, typename OArchive>
     void SaveManager<IArchive, OArchive>::close_file()
     {
-        switch (open_file.index())
-        {
-        case 0:
-            throw std::runtime_error(path.string() + ": invalid usage");
-        case 1:
-            {
-                auto& [stream, ar_ptr] = std::get<1>(open_file);
-                ar_ptr.reset();
-                stream.close();
-                break;
-            }
-        case 2:
-            {
-                auto& [stream, ar_ptr] = std::get<2>(open_file);
-                ar_ptr.reset();
-                stream.close();
+        OpenFile* file_ptr = open_file.get();
+        OpenLoadFile* ifile_ptr;
+        OpenSaveFile* ofile_ptr;
 
-                {
-                    std::stringstream fname;
-                    fname << "save_"
-                        << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
-                        << ".txt";
-                    tracked_saves[last_counter] = fname.str();
-                }
-                if (n_saves > 0 && tracked_saves.size() > n_saves)
-                {
-                    tracked_saves.erase(tracked_saves.begin());
-                }
-                commit();
-                break;
+        if (ifile_ptr = dynamic_cast<OpenLoadFile*>(file_ptr))
+        {
+            open_file.reset();
+        }
+        else if (ofile_ptr = dynamic_cast<OpenSaveFile*>(file_ptr))
+        {
+            open_file.reset();
+
+            {
+                std::stringstream fname;
+                fname << "save_"
+                    << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
+                    << ".txt";
+                tracked_saves[last_counter] = fname.str();
             }
-        default:
-            /* unreachable - guaranteed to throw */
-            AssertIndexRange(open_file.index(), 3);
+            if (n_saves > 0 && tracked_saves.size() > n_saves)
+            {
+                tracked_saves.erase(tracked_saves.begin());
+            }
+            commit();
+        }
+        else
+        {
+            throw std::runtime_error(path.string() + ": invalid usage");
         }
     }
 
     template<typename IArchive, typename OArchive>
     void SaveManager<IArchive, OArchive>::abort_file()
     {
-        switch (open_file.index())
+        OpenFile* file_ptr = open_file.get();
+        OpenLoadFile* ifile_ptr;
+        OpenSaveFile* ofile_ptr;
+
+        if (ifile_ptr = dynamic_cast<OpenLoadFile*>(file_ptr))
         {
-        case 0:
-            throw std::runtime_error(path.string() + ": invalid usage");
-        case 1:
             throw std::runtime_error(path.string() + ": cannot abort load");
-        case 2:
+        }
+        else if (ofile_ptr = dynamic_cast<OpenSaveFile*>(file_ptr))
+        {
+            open_file.reset();
+
             {
-                auto& [stream, ar_ptr] = std::get<2>(open_file);
-                ar_ptr.reset();
-                stream.close();
+                using dealii::Utilities::MPI::n_mpi_processes,
+                    dealii::Utilities::MPI::this_mpi_process;
 
-                {
-                    using dealii::Utilities::MPI::n_mpi_processes,
-                        dealii::Utilities::MPI::this_mpi_process;
-
-                    std::stringstream fname;
-                    fname << "save_"
-                        << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
-                        << '.'
-                        << std::setw(int(std::log10(n_mpi_processes(mpi_communicator))) + 1)
-                        << std::setfill('0') << this_mpi_process(mpi_communicator)
-                        << ".dat";
-                    std::filesystem::remove(path / fname.str());
-                }
-
-                auto it = tracked_saves.end();
-                last_counter = (--it)->first;
-                break;
+                std::stringstream fname;
+                fname << "save_"
+                    << std::setw(n_digits_for_counter) << std::setfill('0') << last_counter
+                    << '.'
+                    << std::setw(int(std::log10(n_mpi_processes(mpi_communicator))) + 1)
+                    << std::setfill('0') << this_mpi_process(mpi_communicator)
+                    << ".dat";
+                std::filesystem::remove(path / fname.str());
             }
-        default:
-            /* unreachable - guaranteed to throw */
-            AssertIndexRange(open_file.index(), 3);
+
+            auto it = tracked_saves.end();
+            last_counter = (--it)->first;
+        }
+        else
+        {
+            throw std::runtime_error(path.string() + ": invalid usage");
         }
     }
 

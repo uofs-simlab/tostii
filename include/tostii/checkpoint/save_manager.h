@@ -53,9 +53,8 @@ namespace tostii
          * 
          * This constructor calls the corresponding overload of initialize().
          */
-        template<typename PathType>
         SaveManager(
-            const PathType& path,
+            const std::string& path,
             const unsigned int n_saves = 0,
             const unsigned int n_digits_for_counter = 1);
         /**
@@ -63,9 +62,8 @@ namespace tostii
          * 
          * This constructor calls the corresponding overload of initialize().
          */
-        template<typename PathType>
         SaveManager(
-            const PathType& path,
+            const std::string& path,
             const MPI_Comm mpi_communicator,
             const unsigned int n_saves = 0,
             const unsigned int n_digits_for_counter = 1);
@@ -84,9 +82,8 @@ namespace tostii
          * the checkpoint number in each file name; if the counter has fewer digits,
          * the checkpoint number is padded with leading zeros.
          */
-        template<typename PathType>
         void initialize(
-            const PathType& path,
+            const std::string& path,
             const unsigned int n_saves = 0,
             const unsigned int n_digits_for_counter = 1);
         /**
@@ -98,9 +95,8 @@ namespace tostii
          * \p mpi_communicator is the MPI communicator for all processes involved in the
          * computation.
         */
-        template<typename PathType>
         void initialize(
-            const PathType& path,
+            const std::string& path,
             const MPI_Comm mpi_communicator,
             const unsigned int n_saves = 0,
             const unsigned int n_digits_for_counter = 1);
@@ -108,11 +104,11 @@ namespace tostii
         /**
          * Returns the last value of \p counter passed to save_file().
          */
-        constexpr unsigned int last_checkpoint() const noexcept;
+        unsigned int last_checkpoint() const noexcept;
         /**
          * Returns the number of tracked checkpoints
          */
-        constexpr unsigned int n_checkpoints() const noexcept;
+        unsigned int n_checkpoints() const noexcept;
 
         /**
          * Opens the latest checkpoint file for loading.
@@ -209,10 +205,23 @@ namespace tostii
         unsigned int last_counter;
         std::map<unsigned int, std::string> tracked_saves;
 
-        std::variant<
-            std::monostate,
-            std::pair<std::ifstream, std::unique_ptr<IArchive>>,
-            std::pair<std::ofstream, std::unique_ptr<OArchive>>
-            > open_file;
+        struct OpenFile
+        {
+            virtual ~OpenFile() = default;
+        };
+        struct OpenLoadFile
+            : public OpenFile
+        {
+            std::ifstream stream;
+            std::unique_ptr<IArchive> ar_ptr;
+        };
+        struct OpenSaveFile
+            : public OpenFile
+        {
+            std::ofstream stream;
+            std::unique_ptr<OArchive> ar_ptr;
+        };
+
+        std::unique_ptr<OpenFile> open_file;
     };
 }

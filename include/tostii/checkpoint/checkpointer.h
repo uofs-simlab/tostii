@@ -23,27 +23,6 @@ namespace tostii
          * initialize() must be called before using this object.
          */
         Checkpointer();
-        /**
-         * Constructor.
-         * 
-         * Calls initialize().
-         */
-        template<typename PathType>
-        Checkpointer(
-            const PathType& path,
-            const unsigned int n_saves = 0,
-            const unsigned int n_digits_for_counter = 1);
-        /**
-         * Constructor.
-         * 
-         * Calls initialize().
-         */
-        template<typename PathType>
-        Checkpointer(
-            const PathType& path,
-            const MPI_Comm mpi_communicator,
-            const unsigned int n_saves = 0,
-            const unsigned int n_digits_for_counter = 1);
 
         /**
          * Initializes this Checkpointer.
@@ -52,9 +31,8 @@ namespace tostii
          * with the provided arguments. Then,
          * if checkpoints already exist, the latest checkpoint is loaded.
          */
-        template<typename PathType>
         void initialize(
-            const PathType& path,
+            const std::string& path,
             const unsigned int n_saves = 0,
             const unsigned int n_digits_for_counter = 1);
         /**
@@ -64,12 +42,21 @@ namespace tostii
          * with the provided arguments. Then,
          * if checkpoints already exist, the latest checkpoint is loaded.
          */
-        template<typename PathType>
         void initialize(
-            const PathType& path,
+            const std::string& path,
             const MPI_Comm mpi_communicator,
             const unsigned int n_saves = 0,
             const unsigned int n_digits_for_counter = 1);
+
+        /**
+         * Returns the latest checkpoint number.
+         */
+        unsigned int last_checkpoint() const noexcept;
+
+        /**
+         * Returns the number of tracked checkpoints.
+         */
+        unsigned int n_checkpoints() const noexcept;
 
         /**
          * Create a checkpoint for this object.
