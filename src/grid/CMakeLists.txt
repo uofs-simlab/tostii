@@ -1,5 +1,5 @@
 
-set(INCLUDE_DIR "${TOSTII_INCLUDE_DIR}/grid")
+set(INCLUDE_DIR "${TOSTII_INCLUDE_DIR}/tostii/grid")
 set(SOURCES
     "L_shape.cc")
 set(HEADERS
