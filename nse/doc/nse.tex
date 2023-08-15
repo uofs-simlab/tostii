@@ -245,55 +245,40 @@ So:
 
 \section{Time Stepping}
 
-In order to solve the monolithic system using an implicit Runge-Kutta method,
-we rewrite the equation from previous section:
+In order to solve the monolithic system using a Runge-Kutta method,
+we rewrite the equation from the previous section:
 \begin{align*}
     \bmat{M} \dot{\bvec{W}}
         & = -(\bmat{A} + \bmat{B}) \bvec{W}
             - \bvec{C} \\
     \dot{\bvec{W}}
-        & = -\bmat{M}^{-1} (\bmat{A} + \bmat{B}) \bvec{W}
-            - \bmat{M}^{-1} \bvec{C} \\
+        & = -\bmat{M}^{-1} ((\bmat{A} + \bmat{B}) \bvec{W}
+            + \bvec{C}) \\
         & = \bvec{F}(\bvec{W})
 \end{align*}
-\noindent We must compute the action of
-$(\brmat{I} - \tau \brmat{J}[\bvec{F}])^{-1}$
+\noindent Furthermore, to use an implicit Runge-Kutta method,
+we must compute the action of $(\brmat{I} - \tau \brmat{J}[\bvec{F}])^{-1}$
 on a vector. We have that:
 \begin{align*}
     \brmat{J}[\bvec{F}]
         & = \frac{\partial \bvec{F}}{\partial \bvec{W}} \\
         & = -\frac{\partial}{\partial \bvec{W}}
-                (\bmat{M}^{-1} (\bmat{A} + \bmat{B}) \bvec{W})
-            - \frac{\partial}{\partial \bvec{W}}
-                (\bmat{M}^{-1} \bvec{C}) \\
-        & = -\bmat{M}^{-1} (\bmat{A} + \bmat{B})
-            - \bmat{M}^{-1} \brmat{J}[\bvec{C}]
+            (\bmat{M}^{-1} ((\bmat{A} + \bmat{B}) \bvec{W} + \bvec{C})) \\
+        & = -\bmat{M}^{-1} \frac{\partial}{\partial \bvec{W}}
+            ((\bmat{A} + \bmat{B}) \bvec{W} + \bvec{C}) \\
+        & = -\bmat{M}^{-1} ((\bmat{A} + \bmat{B}) + \brmat{J}[\bvec{C}]) \\
+    \bmat{M} \brmat{J}[\bvec{F}]
+        & = -\bmat{A} - \bmat{B} - \brmat{J}[\bvec{C}]
 \end{align*}
-
-So, we must determine $\brmat{J}[\bvec{C}]$:
+\noindent The matrix $\brmat{J}[\bvec{C}]$ is less easy to write,
+but can be computed by automatic differentiation.
+Then:
 \begin{align*}
-    \frac{\partial C_i}{\partial W_j}
-        & = \frac{\partial}{\partial W_j}
-            (\kappa \delta_{1, c_i} \left< \varphi_{b_i} \mid u^3 + u v^2 \right>
-                + \kappa \delta_{2, c_i} \left< \varphi_{b_i} \mid v^3 + u^2 v \right>)
+    (\brmat{I} - \tau \brmat{J}[\bvec{F}]) \bvec{x} & = \bvec{b} \\
+    \bmat{M} (\brmat{I} - \tau \brmat{J}[\bvec{F}]) \bvec{x} & = \bmat{M} \bvec{b} \\
+    (\bmat{M} + \tau (\bmat{A} + \bmat{B} + \brmat{J}[\bvec{C}])) \bvec{x} & = \bmat{M} \bvec{b}
 \end{align*}
-\noindent So, consider:
-\begin{align*}
-    \frac{\partial}{\partial W_k} \left< \varphi_{b_i} \mid u^3 \right>
-        & = \frac{\partial}{\partial W_k}
-            \left< \varphi_{b_i} \mid (W_j \varphi_{b_j} \delta_{1, c_j})^3 \right> \\
-        & = \left< \varphi_{b_i} \mid \frac{\partial}{\partial W_k} (W_j \varphi_{b_j} \delta_{1, c_j})^3 \right>
-\end{align*}
-\noindent What is the coefficient of $W_k$ in $(W_j \varphi_{b_j} \delta_{1, c_j})^3$?
-First, note that:
-\begin{align*}
-    (W_j \varphi_{b_j} \delta_{1, c_j})^3
-        & = (W_{j_1} \varphi_{b_{j_1}} \delta_{1, c_{j_1}})
-            (W_{j_2} \varphi_{b_{j_2}} \delta_{1, c_{j_2}})
-            (W_{j_3} \varphi_{b_{j_3}} \delta_{1, c_{j_3}}) \\
-        & = W_{j_1} W_{j_2} W_{j_3}
-            \varphi_{b_{j_1}} \varphi_{b_{j_2}} \varphi_{b_{j_3}}
-            \delta_{1, c_{j_1}} \delta_{1, c_{j_2}} \delta_{1, c_{j_3}}
-\end{align*}
+\noindent Solving for $\bvec{x}$ in the above equation is equivalent to
+multiplication by $(\brmat{I} - \tau \brmat{J}[\bvec{F}])^{-1}$.
 
 \end{document}
