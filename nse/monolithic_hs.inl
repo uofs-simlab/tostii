@@ -67,10 +67,26 @@ namespace NSE
             sparsity_pattern.copy_from(dsp);
         }
 
-        mass_matrix.reinit(locally_owned_dofs, sparsity_pattern, mpi_communicator);
-        minus_A_minus_B.reinit(locally_owned_dofs, sparsity_pattern, mpi_communicator);
-        jacobian_C.reinit(locally_owned_dofs, sparsity_pattern, mpi_communicator);
-        system_matrix.reinit(locally_owned_dofs, sparsity_pattern, mpi_communicator);
+        mass_matrix.reinit(
+            locally_owned_dofs,
+            locally_owned_dofs,
+            sparsity_pattern,
+            mpi_communicator);
+        minus_A_minus_B.reinit(
+            locally_owned_dofs,
+            locally_owned_dofs,
+            sparsity_pattern,
+            mpi_communicator);
+        jacobian_C.reinit(
+            locally_owned_dofs,
+            locally_owned_dofs,
+            sparsity_pattern,
+            mpi_communicator);
+        system_matrix.reinit(
+            locally_owned_dofs,
+            locally_owned_dofs,
+            sparsity_pattern,
+            mpi_communicator);
 
         solution.reinit(locally_owned_dofs, mpi_communicator);
         ghost_solution.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
