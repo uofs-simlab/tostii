@@ -21,6 +21,7 @@ namespace boost::serialization
         {
             ar & values;
             v.set(indices, values);
+            v.compress(dealii::VectorOperation::insert);
         }
         else if constexpr (Archive::is_saving::value)
         {
