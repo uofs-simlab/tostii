@@ -740,10 +740,11 @@ private:
   // Cell Model to be used
   FitzHughNagumo1961EB2008 membrane_model;
 
+  /* removed (does not compile - maybe due to deal.II v9.5.1?)
   std::vector<Point<dim>> evaluation_points;
   Utilities::MPI::RemotePointEvaluation<dim> evaluation_cache;
   std::string eval_points_file;
-
+  */
 };
 
 // @sect3{The <code>MonodomainProblem</code> class implementation}
@@ -969,6 +970,7 @@ void MonodomainProblem<dim>::setup_system(const double       current_time,
     - generalize number of points
     - generalize to theta\neq 0
   */
+  /*
   int n_eval_points = 101;
   evaluation_points.resize(n_eval_points);
   double ee=0.0;
@@ -979,6 +981,7 @@ void MonodomainProblem<dim>::setup_system(const double       current_time,
                   ee += de;
                   return Point<2>(rval, 0.0);
                 });
+  */
 
   // for(auto e : evaluation_points) {
   //   std::cout << e << std::endl;
@@ -986,8 +989,11 @@ void MonodomainProblem<dim>::setup_system(const double       current_time,
   /*
     NOTE: if grid changes, this cache invalidates and must be reinit
   */
+  /*
   evaluation_cache.reinit(evaluation_points, triangulation, mapping);
+  */
 
+  /*
   std::stringstream streamer;
   streamer << "eval_points_"                                  //
            << parameters.os_time_stepping_method << "_"       //
@@ -995,8 +1001,10 @@ void MonodomainProblem<dim>::setup_system(const double       current_time,
            << parameters.tissue_time_stepping_method << "_"   //
            << parameters.n_time_steps << ".txt";
   eval_points_file = streamer.str();
+  */
 
   // Get file ready for output
+  /*
   if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0) {
     std::ofstream f(eval_points_file, std::ofstream::out);
     if (f) {
@@ -1004,6 +1012,7 @@ void MonodomainProblem<dim>::setup_system(const double       current_time,
     }
     f.close();
   }
+  */
 
   if (time_step == 0) {
     pcout << "\n"
@@ -1600,7 +1609,7 @@ template <int dim> void MonodomainProblem<dim>::time_integrate() {
 // to locally owned cells, while providing the wrong value for all other
 // elements -- but these are then ignored anyway.
 template <int dim>
-void MonodomainProblem<dim>::output_results(unsigned int time_step, double current_time) const {
+void MonodomainProblem<dim>::output_results(unsigned int time_step, double /*current_time*/) const {
   DataOut<dim> data_out;
   data_out.attach_dof_handler(dof_handler);
   data_out.add_data_vector(locally_relevant_solution.block(0), "v");
@@ -1637,6 +1646,7 @@ void MonodomainProblem<dim>::output_results(unsigned int time_step, double curre
   /*
     Evaluate at points, and write to file
   */
+  /*
   auto vout =
       VectorTools::point_values<1, dim>(evaluation_cache, //
                                         dof_handler,      //
@@ -1645,7 +1655,9 @@ void MonodomainProblem<dim>::output_results(unsigned int time_step, double curre
       VectorTools::point_values<1, dim>(evaluation_cache, //
                                         dof_handler,      //
                                         locally_relevant_solution.block(1));
+  */
 
+  /*
   std::ofstream f;
   if(Utilities::MPI::this_mpi_process(mpi_communicator) == 0) {
     f.open(eval_points_file, std::ofstream::out | std::ofstream::app);
@@ -1664,6 +1676,7 @@ void MonodomainProblem<dim>::output_results(unsigned int time_step, double curre
     }
     f.close();
   }
+  */
 }
 
 // @sect4{MonodomainProblem::run}

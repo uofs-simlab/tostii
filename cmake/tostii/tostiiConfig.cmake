@@ -46,9 +46,11 @@ set(TOSTII_INCLUDE_DIR "${TOSTII_PATH}/${TOSTII_INCLUDE_RELDIR}")
 set(TOSTII_LIBRARY_DIR "${TOSTII_PATH}/${TOSTII_LIBRARY_RELDIR}")
 set(TOSTII_SHARE_DIR "${TOSTII_PATH}/${TOSTII_SHARE_RELDIR}")
 
+find_library(tostii_lib "tostii"
+    HINTS ${TOSTII_LIBRARY_DIR})
 add_library(tostii UNKNOWN IMPORTED)
 set_target_properties(tostii PROPERTIES
-    IMPORTED_LOCATION "${TOSTII_LIBRARY_DIR}/libtostii.so")
+    IMPORTED_LOCATION ${tostii_lib})
 
 file(GLOB macro_files "${TOSTII_SHARE_DIR}/macros/*.cmake")
 foreach(macro_file ${macro_files})

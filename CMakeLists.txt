@@ -25,7 +25,8 @@ endif()
 
 deal_II_initialize_cached_variables()
 
-project(tostii-demo)
+project(tostii
+    VERSION 0.0.0)
 
 add_subdirectory("cmake")
 add_subdirectory("src")
@@ -39,3 +40,5 @@ add_subdirectory("nse")
 add_subdirectory("monodomain")
 add_subdirectory("bidomain")
 add_subdirectory("neutron")
+
+add_subdirectory("doc")

@@ -5,54 +5,6 @@
 
 namespace Bidomain::Parameters
 {
-    const std::array<std::pair<std::string, double>, time_stepper::INVALID>
-    time_stepper::info = { { 
-        { "Backward Euler", 1.0 },
-        { "Crank Nicolson", 0.5 }
-    } };
-
-    const std::unordered_map<std::string, time_stepper_t>
-    time_stepper::values = { { 
-        { "Backward Euler", BACKWARD_EULER },
-        { "Crank Nicolson", CRANK_NICOLSON }
-    } };
-
-    Patterns::Selection time_stepper::pattern()
-    {
-        const size_t total_size = std::accumulate(
-                info.begin(),
-                info.end(),
-                (size_t)0,
-                [](size_t acc, const std::pair<std::string, double>& s) { return acc + s.first.size(); })
-            + info.size() - 1;
-        std::string res(total_size, '\0');
-
-        auto info_it = info.begin();
-        auto res_it = std::copy(info_it->first.begin(), info_it->first.end(), res.begin());
-        while (++info_it != info.end())
-        {
-            *res_it = '|';
-            res_it = std::copy(info_it->first.begin(), info_it->first.end(), res_it + 1);
-        }
-
-        return res;
-    }
-
-    time_stepper_t time_stepper::from_string(const std::string& name)
-    {
-        return values.at(name);
-    }
-
-    const std::string& time_stepper::to_string(const type value)
-    {
-        return info[value].first;
-    }
-
-    double time_stepper::to_theta(const type value)
-    {
-        return info[value].second;
-    }
-
     void FEMParameters::declare_parameters(ParameterHandler& prm)
     {
         prm.enter_subsection("FEM Parameters");
@@ -118,11 +70,20 @@ namespace Bidomain::Parameters
             Patterns::Double(),
             "Final time tf (in ms)");
         prm.declare_entry(
-            "Time stepping",
-            "Backward Euler",
-            time_stepper::pattern(),
-            "Time stepping method"
-        );
+            "Membrane stepper",
+            "FORWARD_EULER",
+            Patterns::Anything(),
+            "Membrane time stepping method");
+        prm.declare_entry(
+            "Tissue stepper",
+            "BACKWARD_EULER",
+            Patterns::Anything(),
+            "Tissue time stepping method");
+        prm.declare_entry(
+            "OS stepper",
+            "Godunov",
+            Patterns::Anything(),
+            "Operator split time stepping method");
 
         prm.leave_subsection();
     }
@@ -134,7 +95,69 @@ namespace Bidomain::Parameters
         n_time_steps = prm.get_integer("Number of time steps");
         initial_time_step = prm.get_integer("Initial time step");
         final_time = prm.get_double("Final time value");
-        time_stepping = time_stepper::from_string(prm.get("Time stepping"));
+
+        {
+            using namespace tostii::TimeStepping;
+            membrane_stepper = runge_kutta_enums.at(prm.get("Membrane stepper"));
+            tissue_stepper = runge_kutta_enums.at(prm.get("Tissue stepper"));
+            os_stepper = os_method<double>::from_string(prm.get("OS stepper"));
+        }
+
+        prm.leave_subsection();
+    }
+
+    void PassiveParameters::declare_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("Passive Cell Model");
+
+        prm.declare_entry(
+            "Rm value",
+            "1e0",
+            Patterns::Double(),
+            "Resistance");
+
+        prm.leave_subsection();
+    }
+
+    void PassiveParameters::parse_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("Passive Cell Model");
+
+        Rm = prm.get_double("Rm value");
+
+        prm.leave_subsection();
+    }
+
+    void FHNParameters::declare_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("FitzHugh-Nagumo Cell Model");
+
+        prm.declare_entry(
+            "epsilon value",
+            "0.1",
+            Patterns::Double(),
+            "FitzHugh-Nagumo epsilon");
+        prm.declare_entry(
+            "beta value",
+            "1.0",
+            Patterns::Double(),
+            "FitzHugh-Nagumo beta");
+        prm.declare_entry(
+            "gamma value",
+            "0.5",
+            Patterns::Double(),
+            "FitzHugh-Nagumo gamma");
+
+        prm.leave_subsection();
+    }
+
+    void FHNParameters::parse_parameters(ParameterHandler& prm)
+    {
+        prm.enter_subsection("FitzHugh-Nagumo Cell Model");
+
+        epsilon = prm.get_double("epsilon value");
+        beta = prm.get_double("beta value");
+        gamma = prm.get_double("gamma value");
 
         prm.leave_subsection();
     }
@@ -154,11 +177,6 @@ namespace Bidomain::Parameters
             Patterns::Double(),
             "Capacitance");
         prm.declare_entry(
-            "Rm value",
-            "1e0",
-            Patterns::Double(),
-            "Resistance");
-        prm.declare_entry(
             "sigmai value",
             "1e0",
             Patterns::Double(),
@@ -168,6 +186,29 @@ namespace Bidomain::Parameters
             "1e0",
             Patterns::Double(),
             "Extracellular active conductivity");
+        prm.declare_entry(
+            "sigmaix value",
+            "1e0",
+            Patterns::Double(),
+            "Intracellular active conductivity (xx component)");
+        prm.declare_entry(
+            "sigmaiy value",
+            "1e0",
+            Patterns::Double(),
+            "Intracellular active conductivity (yy component)");
+        prm.declare_entry(
+            "sigmaex value",
+            "1e0",
+            Patterns::Double(),
+            "Extracellular active conductivity (xx component)");
+        prm.declare_entry(
+            "sigmaey value",
+            "1e0",
+            Patterns::Double(),
+            "Extracellular active conductivity (yy component)");
+
+        PassiveParameters::declare_parameters(prm);
+        FHNParameters::declare_parameters(prm);
 
         prm.leave_subsection();
     }
@@ -178,9 +219,15 @@ namespace Bidomain::Parameters
 
         chi = prm.get_double("chi value");
         Cm = prm.get_double("Cm value");
-        Rm = prm.get_double("Rm value");
         sigmai = prm.get_double("sigmai value");
         sigmae = prm.get_double("sigmae value");
+        sigmaix = prm.get_double("sigmaix value");
+        sigmaiy = prm.get_double("sigmaiy value");
+        sigmaex = prm.get_double("sigmaex value");
+        sigmaey = prm.get_double("sigmaey value");
+
+        passive.parse_parameters(prm);
+        fhn.parse_parameters(prm);
 
         prm.leave_subsection();
     }

@@ -1,42 +1,62 @@
 
 subsection FEM Parameters
-  set Dimension value = 2
+    set Dimension value = 2
 
-  set Polynomial degree = 1
+    set Polynomial degree = 1
 
-  set Global refinement value = 4
+    set Global refinement value = 4
 end
 
 subsection Time Stepping Parameters
-  set Number of time steps = 100
+    set Number of time steps = 200
 
-  set Initial time step = 0
-  
-  set Final time value = 1.0
+    set Initial time step = 0
+    
+    set Final time value = 20.0
 
-  set Time stepping = Backward Euler
+    set Membrane stepper = FORWARD_EULER
+
+    set Tissue stepper = BACKWARD_EULER
+
+    set OS stepper = Godunov
 end
 
 subsection Cell Parameters
-  set chi value = 200.0
+    set chi value = 150.0
 
-  set Cm value = 1.0e-2
+    set Cm value = 1.0e-2
 
-  set Rm value = 1.0e1
+    set sigmai value = 20.0e-1
 
-  set sigmai value = 20.0e-1
+    set sigmae value = 5.0e-1
 
-  set sigmae value = 5.0e-1
+    set sigmaix value = 2.525e-1
+    set sigmaiy value = 2.22e-2
+    
+    set sigmaex value = 8.21e-1
+    set sigmaey value = 2.15e-1
+
+    subsection Passive Cell Model
+        set Rm value = 1.0e1
+    end
+
+    subsection FitzHugh-Nagumo Cell Model
+        set epsilon value = 0.1
+
+        set beta value = 1.0
+
+        set gamma value = 0.5
+    end
 end
 
 subsection Linear Solver Parameters
-  set Tolerance = 1e-6
+    set Tolerance = 1e-6
 
-  set Max iteration multiplier = 578
+    set Max iteration multiplier = 578
 end
 
 subsection Output Parameters
-  set Number of pvtu files = 10
+    set Number of pvtu files = 100
 
-  set Output prefix = ./solution
+    set Output prefix = ./solution
 end

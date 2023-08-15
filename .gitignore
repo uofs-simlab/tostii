@@ -8,8 +8,7 @@ out/
 *.log
 
 # solutions
-solution-*
-solution_*
+solution*
 *.tar.gz
 
 # visual studio code files
