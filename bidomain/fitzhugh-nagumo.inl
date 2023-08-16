@@ -44,7 +44,7 @@ namespace Bidomain::FitzHughNagumo
     Stimulus<dim>::Stimulus(
         const double initial_time,
         const Parameters::AllParameters&)
-        : Function<dim>(1, initial_time)
+        : Function<dim>(3, initial_time)
     { }
 
     template<>
@@ -52,8 +52,8 @@ namespace Bidomain::FitzHughNagumo
         const Point<2>& p,
         const unsigned int component) const
     {
-        (void)component;
-        AssertIndexRange(component, 1);
+        AssertIndexRange(component, 3);
+        if (component != 0) return 0.;
 
         if (this->get_time() <= 1. && p[0] <= 0.2 && p[1] <= 0.2)
         {

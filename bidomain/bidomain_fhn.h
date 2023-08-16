@@ -38,77 +38,55 @@ namespace Bidomain
             transmembrane_component = 0,
             state_variable_component = 1,
             extracellular_component = 2;
-        static constexpr unsigned int
-            explicit_transmembrane_component = 0,
-            explicit_state_variable_component = 1;
-        static constexpr unsigned int
-            implicit_transmembrane_component = 0,
-            implicit_extracellular_component = 1;
 
-        BidomainProblem(const Parameters::AllParameters& param);
+        BidomainProblem(
+            const Parameters::AllParameters& param);
         
         void run();
 
     private:
-        void setup_system();
         void assemble_system();
-        void assemble_membrane_rhs(
+        void step_membrane(
             const double t,
-            const LA::MPI::BlockVector& y,
-            LA::MPI::BlockVector& out);
-        void solve_membrane_lhs(
             const LA::MPI::BlockVector& y,
             LA::MPI::BlockVector& out);
         void step_tissue(
             const double tau,
             const LA::MPI::BlockVector& y,
             LA::MPI::BlockVector& out);
-        void output_results();
+        void output_results() const;
 
-        constexpr types::global_dof_index global_to_component_index(
-            const unsigned int c_i,
-            const types::global_dof_index i) const;
-        static constexpr void copy_bdsp(
-            const BlockDynamicSparsityPattern& bdsp,
-            const std::vector<unsigned int>& mask,
-            BlockDynamicSparsityPattern& out);
+        static const std::vector<unsigned int> explicit_blocks;
+        static const std::vector<unsigned int> implicit_blocks;
 
         const Parameters::AllParameters param;
 
-        MPI_Comm mpi_communicator;
-
+        const MPI_Comm mpi_communicator;
         ConditionalOStream pcout;
-        TimerOutput computing_timer;
+
+        mutable TimerOutput computing_timer;
 
         parallel::distributed::Triangulation<dim> triangulation;
         DoFHandler<dim> dof_handler;
 
-        std::vector<IndexSet> locally_owned_dofs;
-        std::vector<IndexSet> locally_relevant_dofs;
-        std::vector<IndexSet> explicit_owned_dofs;
-        std::vector<IndexSet> explicit_relevant_dofs;
-        std::vector<IndexSet> implicit_owned_dofs;
-        std::vector<IndexSet> implicit_relevant_dofs;
-        std::vector<types::global_dof_index> dofs_per_block;
-        std::vector<std::vector<types::global_dof_index>> component_local_dofs;
-
         const FESystem<dim> fe;
         const QGauss<dim> quadrature;
+
+        std::vector<IndexSet> locally_owned_dofs;
+        std::vector<IndexSet> locally_relevant_dofs;
 
         AffineConstraints<double> constraints;
 
         LA::MPI::BlockVector solution;
-        LA::MPI::BlockVector relevant_solution;
-        LA::MPI::BlockVector membrane_temp;
-        LA::MPI::BlockVector relevant_membrane_temp;
-        LA::MPI::BlockVector membrane_rhs;
+        LA::MPI::BlockVector locally_relevant_solution;
+        LA::MPI::BlockVector I_stim;
         LA::MPI::BlockVector tissue_rhs;
 
-        LA::MPI::BlockSparseMatrix explicit_mass_matrix;
+        LA::MPI::BlockSparseMatrix mass_matrix;
         LA::MPI::BlockSparseMatrix implicit_mass_matrix;
-        LA::MPI::BlockSparseMatrix membrane_matrix;
         LA::MPI::BlockSparseMatrix tissue_matrix;
-        LA::MPI::BlockSparseMatrix implicit_matrix;
+        LA::MPI::BlockSparseMatrix implicit_tissue_matrix;
+        LA::MPI::BlockSparseMatrix implicit_system_matrix;
 
         unsigned int timestep_number;
         const double time_step;

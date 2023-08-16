@@ -37,21 +37,7 @@ tostii_executable(bidomain_godunov_2
 target_link_libraries(bidomain_godunov_2
     bidomain_passive_utils_2)
 
-add_library(bidomain_fhn_utils OBJECT
-    "parameters.cc" "parameters.h"
-    "fitzhugh-nagumo.cc" "fitzhugh-nagumo.inl" "fitzhugh-nagumo.h")
-deal_II_setup_target(bidomain_fhn_utils)
-target_include_directories(bidomain_fhn_utils PUBLIC
-    "${TOSTII_INCLUDE_DIR}")
-target_link_libraries(bidomain_fhn_utils
-    tostii)
-
 tostii_executable(bidomain_fhn
+    "parameters.cc" "parameters.h"
+    "fitzhugh-nagumo.cc" "fitzhugh-nagumo.inl" "fitzhugh-nagumo.h"
     "bidomain_fhn.cc" "bidomain_fhn.inl" "bidomain_fhn.h")
-target_link_libraries(bidomain_fhn
-    bidomain_fhn_utils)
-
-tostii_executable(bidomain_fhn_manual
-    "bidomain_fhn_manual.cc" "bidomain_fhn_manual.inl" "bidomain_fhn_manual.h")
-target_link_libraries(bidomain_fhn_manual
-    bidomain_fhn_utils)
