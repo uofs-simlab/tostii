@@ -176,7 +176,7 @@ public:
       std::vector<std::function<void(const TimeType, const TimeType,
                                      const VectorType&, VectorType&)>>&
              J_inverse,
-      TimeType t, TimeType delta_t, VectorType& y);
+      TimeType t, TimeType delta_t, VectorType& y) override;
 
   /**
    * This function is used to advance from time @p t to t+ @p delta_t. @p f
@@ -225,7 +225,7 @@ public:
   /**
    * Return the status of the current object.
    */
-  const Status& get_status() const;
+  const Status& get_status() const override;
 
 private:
   /**
@@ -302,7 +302,7 @@ public:
       std::vector<std::function<void(const TimeType, const TimeType,
                                      const VectorType&, VectorType&)>>&
              J_inverse,
-      TimeType t, TimeType delta_t, VectorType& y);
+      TimeType t, TimeType delta_t, VectorType& y) override;
 
   /**
    * This function is used to advance from time @p t to t+ @p delta_t. @p f
@@ -344,7 +344,7 @@ public:
   /**
    * Return the status of the current object.
    */
-  const Status& get_status() const;
+  const Status& get_status() const override;
 
 private:
   /**
@@ -439,7 +439,7 @@ private:
                                        const TimeType,      //
                                        const VectorType&, //
                                        VectorType&)>>& id_minus_tau_J_inverse,
-        TimeType t, TimeType delta_t, VectorType& y);
+        TimeType t, TimeType delta_t, VectorType& y) override;
 
     /**
      *
@@ -548,7 +548,7 @@ public:
    */
   TimeType evolve_one_time_step(f_vfun_type&   f,
                               jac_vfun_type& id_minus_tau_J_inverse, TimeType t,
-                              TimeType delta_t, BVectorType& y);
+                              TimeType delta_t, BVectorType& y) override;
 
   /** Trimmed down function for an OS method that has been setup */
   TimeType evolve_one_time_step(TimeType t, TimeType delta_t, BVectorType& y);
@@ -563,7 +563,7 @@ public:
   /**
    * Return the status of the current object.
    */
-  const Status& get_status() const;
+  const Status& get_status() const override;
 
 private:
   /*
@@ -787,7 +787,7 @@ public:
    */
   TimeType evolve_one_time_step(f_vfun_type&   f,
                                 jac_vfun_type& id_minus_tau_J_inverse,
-                                TimeType t, TimeType delta_t, VectorType& y);
+                                TimeType t, TimeType delta_t, VectorType& y) override;
 
   /** Trimmed down function for an OS method that has been setup */
   TimeType evolve_one_time_step(TimeType t, TimeType delta_t, VectorType& y);
@@ -802,7 +802,7 @@ public:
   /**
    * Return the status of the current object.
    */
-  const Status& get_status() const;
+  const Status& get_status() const override;
 
 private:
   /*
