@@ -164,7 +164,7 @@ namespace NSE
                             {
                                 const Point<dim>& p = fe_v.quadrature_point(q);
 
-                                shape_grad_product += 0.5 * fe_v.JxW(q)
+                                shape_grad_product += fe_v.JxW(q)
                                     * (fe_v.shape_grad(i, q)
                                     * fe_v.shape_grad(j, q));
                                 shape_voltage_product += fe_v.JxW(q)
@@ -173,7 +173,7 @@ namespace NSE
                                     * fe_v.shape_value(j, q);
                             }
 
-                            cell_AB(i, j) -= shape_grad_product + shape_voltage_product;
+                            cell_AB(i, j) -= 0.5 * shape_grad_product + shape_voltage_product;
                         }
                         else
                         {
@@ -380,10 +380,11 @@ namespace NSE
 
         std::filesystem::path path(param.output_prefix);
         std::string filename = path.filename().string();
-        std::string prefix = path.remove_filename().string();
+        std::filesystem::path prefix = path.remove_filename();
 
+        std::filesystem::create_directories(prefix);
         data_out.write_vtu_with_pvtu_record(
-            prefix,
+            prefix.string(),
             filename,
             timestep_number,
             mpi_communicator,
