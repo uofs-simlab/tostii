@@ -441,7 +441,7 @@ namespace Bidomain
                 {
                     for (unsigned int i = 0; i < 100; ++i)
                     {
-                        stages.emplace_back(stage.op_num, stage.alpha / 100.);
+                        stages.push_back({ stage.op_num, stage.alpha / 100. });
                     }
                 }
                 else
