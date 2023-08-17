@@ -57,7 +57,7 @@ namespace Bidomain::FitzHughNagumo
 
         if (this->get_time() <= 1. && p[0] <= 0.2 && p[1] <= 0.2)
         {
-            return 0.0667;
+            return 10.;
         }
         else
         {
