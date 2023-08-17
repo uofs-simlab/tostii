@@ -3,7 +3,7 @@ subsection Finite Element parameters
 
     set Polynomial degree = 2
 
-    set Refinement level = 8
+    set Refinement level = 4
 
 end
 
@@ -17,7 +17,7 @@ end
 
 subsection Linear Solver parameters
 
-    set Solver tolerance = 1e-12
+    set Solver tolerance = 1e-16
 
     set Max iteration multiplier = 100
 

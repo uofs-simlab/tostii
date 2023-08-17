@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+#include <deal.II/sundials/kinsol.h>
+
 #include <tostii/checkpoint/serialize_petsc_mpi.h>
 
 #include <tostii/time_stepping/implicit_runge_kutta.h>
@@ -67,12 +69,12 @@ namespace NSE
             sparsity_pattern.copy_from(dsp);
         }
 
-        mass_matrix.reinit(
+        stiffness_matrix.reinit(
             locally_owned_dofs,
             locally_owned_dofs,
             sparsity_pattern,
             mpi_communicator);
-        minus_A_minus_B.reinit(
+        old_stiffness_matrix.reinit(
             locally_owned_dofs,
             locally_owned_dofs,
             sparsity_pattern,
@@ -82,7 +84,7 @@ namespace NSE
             locally_owned_dofs,
             sparsity_pattern,
             mpi_communicator);
-        system_matrix.reinit(
+        jacobian_matrix.reinit(
             locally_owned_dofs,
             locally_owned_dofs,
             sparsity_pattern,
@@ -90,8 +92,9 @@ namespace NSE
 
         solution.reinit(locally_owned_dofs, mpi_communicator);
         ghost_solution.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+        old_solution_residual_ready = false;
+        old_solution_residual.reinit(locally_owned_dofs, mpi_communicator);
         temp.reinit(locally_owned_dofs, mpi_communicator);
-        ghost_temp.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
 
         this->initialize(
             param.checkpoint_path,
@@ -118,8 +121,8 @@ namespace NSE
         pcout << "Assembling system matrices... " << std::flush;
         TimerOutput::Scope timer_scope(computing_timer, "Assemble System");
 
-        mass_matrix = 0.;
-        minus_A_minus_B = 0.;
+        stiffness_matrix = 0.;
+        old_stiffness_matrix = 0.;
 
         FEValues<dim> fe_v(
             fe,
@@ -131,8 +134,12 @@ namespace NSE
 
         std::vector<types::global_cell_index> local_dof_indices(dofs_per_cell);
 
-        FullMatrix<double> cell_mass(dofs_per_cell);
-        FullMatrix<double> cell_AB(dofs_per_cell);
+        FullMatrix<double> cell_stiffness(
+            dofs_per_cell,
+            dofs_per_cell);
+        FullMatrix<double> old_cell_stiffness(
+            dofs_per_cell,
+            dofs_per_cell);
 
         PrescribedData::Potential<dim> potential;
 
@@ -143,8 +150,8 @@ namespace NSE
                 fe_v.reinit(cell);
                 cell->get_dof_indices(local_dof_indices);
 
-                cell_mass = 0.;
-                cell_AB = 0.;
+                cell_stiffness = 0.;
+                old_cell_stiffness = 0.;
 
                 for (unsigned int i = 0; i < dofs_per_cell; ++i)
                 {
@@ -173,7 +180,10 @@ namespace NSE
                                     * fe_v.shape_value(j, q);
                             }
 
-                            cell_AB(i, j) -= 0.5 * shape_grad_product + shape_voltage_product;
+                            cell_stiffness(i, j) += 0.5 * time_step
+                                * (0.5 * shape_grad_product + shape_voltage_product);
+                            old_cell_stiffness(i, j) += 0.5 * time_step
+                                * (0.5 * shape_grad_product + shape_voltage_product);
                         }
                         else
                         {
@@ -186,55 +196,135 @@ namespace NSE
                                     * fe_v.shape_value(j, q);
                             }
 
-                            cell_mass(i, j) += mass_sign * shape_value_product;
+                            cell_stiffness(i, j) += mass_sign * shape_value_product;
+                            old_cell_stiffness(i, j) -= mass_sign * shape_value_product;
                         }
                     }
                 }
 
                 constraints.distribute_local_to_global(
-                    cell_mass,
+                    cell_stiffness,
                     local_dof_indices,
-                    mass_matrix);
+                    stiffness_matrix);
                 constraints.distribute_local_to_global(
-                    cell_AB,
+                    old_cell_stiffness,
                     local_dof_indices,
-                    minus_A_minus_B);
+                    old_stiffness_matrix);
             }
         }
 
-        mass_matrix.compress(VectorOperation::add);
-        minus_A_minus_B.compress(VectorOperation::add);
+        stiffness_matrix.compress(VectorOperation::add);
+        old_stiffness_matrix.compress(VectorOperation::add);
 
         pcout << "done." << std::endl;
     }
 
     template<int dim>
-    void NonlinearSchroedingerEquation<dim>::rhs(
+    void NonlinearSchroedingerEquation<dim>::old_residual()
+    {
+        pcout << "\tComputing old residual... " << std::flush;
+        TimerOutput::Scope timer_scope(computing_timer, "Old Residual");
+
+        old_solution_residual = 0.;
+        
+        FEValues<dim> fe_v(
+            fe,
+            quadrature,
+            update_values | update_JxW_values);
+        
+        const unsigned int dofs_per_cell = fe_v.dofs_per_cell;
+        const unsigned int n_q_points = fe_v.n_quadrature_points;
+
+        std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
+        Table<2, double> function_values(n_q_points, 2);
+
+        Vector<double> cell_C(dofs_per_cell);
+
+        for (const auto& cell : dof_handler.active_cell_iterators())
+        {
+            if (cell->is_locally_owned())
+            {
+                fe_v.reinit(cell);
+                cell->get_dof_indices(local_dof_indices);
+
+                cell_C = 0.;
+
+                for (unsigned int q = 0; q < n_q_points; ++q)
+                {
+                    function_values[q][0] = 0.;
+                    function_values[q][1] = 0.;
+                    for (unsigned int j = 0; j < dofs_per_cell; ++j)
+                    {
+                        const unsigned int c_j = fe.system_to_component_index(j).first;
+
+                        function_values[q][c_j] += ghost_solution[local_dof_indices[j]]
+                            * fe_v.shape_value(j, q);
+                    }
+                }
+
+                for (unsigned int i = 0; i < dofs_per_cell; ++i)
+                {
+                    const unsigned int c_i = fe.system_to_component_index(i).first;
+
+                    for (unsigned int q = 0; q < n_q_points; ++q)
+                    {
+                        cell_C[i] += 0.5 * time_step * kappa * fe_v.JxW(q)
+                            * fe_v.shape_value(i, q)
+                            * (function_values[q][c_i]
+                                * (function_values[q][c_i]
+                                    * function_values[q][c_i]
+                                    + function_values[q][1 - c_i]
+                                    * function_values[q][1 - c_i]));
+                    }
+                }
+
+                constraints.distribute_local_to_global(
+                    cell_C,
+                    local_dof_indices,
+                    old_solution_residual);
+            }
+        }
+
+        old_solution_residual.compress(VectorOperation::add);
+
+        old_stiffness_matrix.vmult_add(old_solution_residual, solution);
+
+        old_solution_residual_ready = true;
+        pcout << "norm=" << old_solution_residual.l2_norm() << std::endl;
+    }
+
+    template<int dim>
+    void NonlinearSchroedingerEquation<dim>::residual(
         const LA::MPI::Vector& y,
         LA::MPI::Vector& out)
     {
-        pcout << "\tComputing RHS... " << std::flush;
-        TimerOutput::Scope timer_scope(computing_timer, "RHS");
+        Assert(old_solution_residual_ready, ExcInternalError());
 
-        temp = 0.;
+        pcout << "\tComputing residual... " << std::flush;
+        TimerOutput::Scope timer_scope(computing_timer, "Residual");
+
+        out = 0.;
         jacobian_C = 0.;
 
         FEValues<dim> fe_v(
             fe,
             quadrature,
             update_values | update_JxW_values);
-
+        
         const unsigned int dofs_per_cell = fe_v.dofs_per_cell;
         const unsigned int n_q_points = fe_v.n_quadrature_points;
-        
+
         std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
 
         std::vector<Sacado::Fad::DFad<double>> dof_values(dofs_per_cell);
         Table<2, Sacado::Fad::DFad<double>> function_values(n_q_points, 2);
 
         Vector<double> cell_C(dofs_per_cell);
-        FullMatrix<double> cell_jacobian(dofs_per_cell);
-
+        FullMatrix<double> cell_jacobian(
+            dofs_per_cell,
+            dofs_per_cell);
+        
         for (const auto& cell : dof_handler.active_cell_iterators())
         {
             if (cell->is_locally_owned())
@@ -272,7 +362,7 @@ namespace NSE
 
                     for (unsigned int q = 0; q < n_q_points; ++q)
                     {
-                        C_i += kappa * fe_v.JxW(q)
+                        C_i += 0.5 * time_step * kappa * fe_v.JxW(q)
                             * fe_v.shape_value(i, q)
                             * (function_values[q][c_i]
                                 * (function_values[q][c_i]
@@ -281,17 +371,17 @@ namespace NSE
                                     * function_values[q][1 - c_i]));
                     }
 
-                    cell_C(i) -= C_i.val();
+                    cell_C[i] += C_i.val();
                     for (unsigned int k = 0; k < dofs_per_cell; ++k)
                     {
-                        cell_jacobian(i, k) -= C_i.fastAccessDx(k);
+                        cell_jacobian(i, k) += C_i.fastAccessDx(k);
                     }
                 }
 
                 constraints.distribute_local_to_global(
                     cell_C,
                     local_dof_indices,
-                    temp);
+                    out);
                 constraints.distribute_local_to_global(
                     cell_jacobian,
                     local_dof_indices,
@@ -299,57 +389,51 @@ namespace NSE
             }
         }
 
-        temp.compress(VectorOperation::add);
+        out.compress(VectorOperation::add);
         jacobian_C.compress(VectorOperation::add);
 
-        minus_A_minus_B.vmult_add(temp, y);
-        constraints.distribute(temp);
-        
-        const unsigned int n_iter = solve(mass_matrix, out, temp);
+        stiffness_matrix.vmult_add(out, y);
+        out.add(1., old_solution_residual);
 
-        pcout << "done in " << n_iter << " iterations." << std::endl;
+        pcout << "norm=" << out.l2_norm() << std::endl;
+    }
+
+    template<int dim>
+    void NonlinearSchroedingerEquation<dim>::setup_jacobian()
+    {
+        pcout << "\tSetup Jacobian system... " << std::flush;
+        TimerOutput::Scope timer_scope(computing_timer, "Jacobian Setup");
+
+        jacobian_matrix.copy_from(stiffness_matrix);
+        jacobian_matrix.add(1., jacobian_C);
+
+        pcout << "done." << std::endl;
     }
 
     template<int dim>
     void NonlinearSchroedingerEquation<dim>::jacobian_solve(
-        const double tau,
         const LA::MPI::Vector& y,
-        LA::MPI::Vector& out)
+        LA::MPI::Vector& out,
+        const double tolerance)
     {
         pcout << "\tSolving Jacobian system... " << std::flush;
         TimerOutput::Scope timer_scope(computing_timer, "Jacobian Solve");
 
-        mass_matrix.vmult(temp, y);
-
-        system_matrix.copy_from(mass_matrix);
-        system_matrix.add(-tau, minus_A_minus_B);
-        system_matrix.add(-tau, jacobian_C);
-
-        const unsigned int n_iter = solve(system_matrix, out, temp);
-
-        pcout << "done in " << n_iter << " iterations." << std::endl;
-    }
-
-    template<int dim>
-    unsigned int NonlinearSchroedingerEquation<dim>::solve(
-        const LA::MPI::SparseMatrix& A,
-        LA::MPI::Vector& x,
-        const LA::MPI::Vector& b) const
-    {
         LA::MPI::PreconditionAMG preconditioner;
         {
             LA::MPI::PreconditionAMG::AdditionalData additional_data;
-            preconditioner.initialize(A, additional_data);
+            preconditioner.initialize(jacobian_matrix, additional_data);
         }
 
         SolverControl solver_control(
-            param.max_iterations * dof_handler.n_dofs(),
-            param.tolerance);
+            dof_handler.n_dofs() * param.max_iterations,
+            tolerance);
         LA::SolverGMRES solver(solver_control, mpi_communicator);
 
-        solver.solve(A, x, b, preconditioner);
+        solver.solve(jacobian_matrix, out, y, preconditioner);
+        constraints.distribute(out);
 
-        return solver_control.last_step();
+        pcout << "done in " << solver_control.last_step() << " iterations." << std::endl;
     }
 
     template<int dim>
@@ -421,39 +505,48 @@ namespace NSE
             ? param.n_time_steps / param.n_checkpoints
             : param.n_time_steps + 1;
 
-        tostii::TimeStepping::ImplicitRungeKutta<LA::MPI::Vector> stepper(param.rk_method);
-        const auto stepper_rhs = [this](
-            const double,
-            const LA::MPI::Vector& y,
-            LA::MPI::Vector& out)
+        SUNDIALS::KINSOL<LA::MPI::Vector>::AdditionalData additional_data;
+        additional_data.function_tolerance = param.tolerance;
+        SUNDIALS::KINSOL<LA::MPI::Vector> solver(
+            additional_data,
+            mpi_communicator);
+        
+        solver.reinit_vector = [this](
+            LA::MPI::Vector& y)
         {
-            this->ghost_temp = y;
-            this->rhs(this->ghost_temp, out);
+            y.reinit(this->locally_owned_dofs, this->mpi_communicator);
         };
-        const auto stepper_lhs = [this](
-            const double,
-            const double tau,
+        solver.residual = [this](
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out)
         {
-            this->ghost_temp = y;
-            this->jacobian_solve(tau, this->ghost_temp, out);
+            this->residual(y, out);
+        };
+        solver.setup_jacobian = [this](
+            const LA::MPI::Vector&,
+            const LA::MPI::Vector&)
+        {
+            this->setup_jacobian();
+        };
+        solver.solve_with_jacobian = [this](
+            const LA::MPI::Vector& y,
+            LA::MPI::Vector& out,
+            const double tolerance)
+        {
+            this->jacobian_solve(y, out, tolerance);
         };
 
         while (timestep_number < param.n_time_steps)
         {
             pcout << "Time step " << ++timestep_number << ':' << std::endl;
 
-            time = stepper.evolve_one_time_step(
-                stepper_rhs,
-                stepper_lhs,
-                time,
-                time_step,
-                solution);
-            
+            ghost_solution = solution;
+            old_residual();
+
+            solver.solve(solution);
+
             if (timestep_number % mod_output_steps == 0)
             {
-                ghost_solution = solution;
                 output_results();
             }
             if (timestep_number % mod_checkpoint_steps == 0)

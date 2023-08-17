@@ -55,19 +55,16 @@ namespace NSE
 
     private:
         void assemble_system();
-        void rhs(
+        void old_residual();
+        void residual(
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out);
+        void setup_jacobian();
         void jacobian_solve(
-            const double tau,
             const LA::MPI::Vector& y,
-            LA::MPI::Vector& out);
+            LA::MPI::Vector& out,
+            const double tolerance);
         void output_results() const;
-
-        unsigned int solve(
-            const LA::MPI::SparseMatrix& A,
-            LA::MPI::Vector& x,
-            const LA::MPI::Vector& b) const;
 
         friend class boost::serialization::access;
         void serialize(
@@ -97,14 +94,19 @@ namespace NSE
 
         LA::MPI::Vector solution;
         LA::MPI::Vector ghost_solution;
+        bool old_solution_residual_ready;
+        LA::MPI::Vector old_solution_residual;
         LA::MPI::Vector temp;
-        LA::MPI::Vector ghost_temp;
 
         SparsityPattern sparsity_pattern;
-        LA::MPI::SparseMatrix mass_matrix;
-        LA::MPI::SparseMatrix minus_A_minus_B;
+        /** M + h/2 (A + B) */
+        LA::MPI::SparseMatrix stiffness_matrix;
+        /** -M + h/2 (A + B) */
+        LA::MPI::SparseMatrix old_stiffness_matrix;
+        /** h/2 J[C] */
         LA::MPI::SparseMatrix jacobian_C;
-        LA::MPI::SparseMatrix system_matrix;
+        /** J[R] */
+        LA::MPI::SparseMatrix jacobian_matrix;
 
         double time;
         const double time_step;
