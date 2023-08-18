@@ -15,6 +15,26 @@
 
 \section{Introduction}
 
+This document is relevant to the targets:
+\begin{itemize}
+    \item \texttt{bidomain}
+    \item \texttt{bidomain\_godunov\_2}
+    \item \texttt{bidomain\_godunov}
+    \item \texttt{bidomain\_godunov\_2}
+\end{itemize}
+\noindent The section "Toy Problem" is relevant to
+\texttt{bidomain} and \texttt{bidomain\_godunov},
+while "Toy Problem 2" is relevant to
+\texttt{bidomain\_2} and \texttt{bidomain\_godunov\_2}.
+The section "Time Integration" is relevant to
+\texttt{bidomain} and \texttt{bidomain\_2}.
+Naturally, \texttt{bidomain\_godunov} and \texttt{bidomain\_godunov\_2}
+rely on the section "Godunov Splitting";
+this section makes the same assumption and method
+as the previous section, "Linear Formulation".
+See the section "Version History" for more information
+about these different targets.
+
 Let:
 \begin{align*}
     n & \in \mathbb{N} \\
@@ -340,6 +360,7 @@ we take $\bvec{W}_{t + 1} = \bvec{W}_{t + 1}^{(\ell)}$ as the solution for the t
 \section{Linear Formulation}
 
 We can also solve the problem using the assumption that $I_\text{ion}(v) = \frac{1}{R_\text{m}} v$.
+In this case, the Bidomain equations become linear, allowing us to forego Newton iteration.
 If we solve using Backward Euler, we have that:
 \begin{align*}
     \frac{1}{h} \bmat{M} (\bvec{W}_{t + 1} - \bvec{W}_t) & = \bmat{A} \bvec{W}_{t + 1} + \bvec{f}_{t + 1} \\
@@ -402,5 +423,28 @@ we get:
     \frac{1}{h} \bmat{M} \bvec{W}_t^{(*)} & = \frac{1}{h} \bmat{M} \bvec{W}_t + \bvec{f}_{t + 1} \\
     (\frac{1}{h} \bmat{M} - \bmat{A}) \bvec{W}_{t + 1} & = \frac{1}{h} \bmat{M} \bvec{W}_t^{(*)}
 \end{align*}
+
+\newpage
+
+\section{Version History}
+
+The \texttt{bidomain[\_2]} targets are an attempt to solve the Bidomain problem
+assuming that the equations may be nonlinear. However, the version using
+the data described in "Toy Problem" performs poorly;
+in particular, the $u_\text{e}$ component is forced to $0$,
+and while the shape of the $v$ component is correct,
+it appears scaled down.
+However, when solving the problem according to the method described
+in "Linear Formulation", these problems do not arise.
+\texttt{bidomain\_godunov[\_2]} does Godunov splitting using this
+linear method, which performs similarly well.
+
+The \texttt{*\_2} targets use a different toy problem in which
+$v$ and $u_\text{e}$ are linearly independent,
+and the \texttt{bidomain\_2} performs better on this problem
+(although the scaling of both $v$ and $u_\text{e}$ are slightly off,
+the $u_\text{e}$ component is not forced to $0$).
+The \texttt{bidomain\_godunov\_2} code performs
+about as well as \texttt{bidomain\_godunov}.
 
 \end{document}

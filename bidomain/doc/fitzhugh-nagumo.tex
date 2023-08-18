@@ -16,6 +16,8 @@
 
 \section{Introduction}
 
+This document is relevant to the \texttt{bidomain\_fhn} target.
+
 We consider the Bidomain equations:
 \begin{align*}
     \chi C_\text{m} \frac{\partial v}{\partial t}
@@ -206,64 +208,42 @@ we consider each of the forms above:
 \end{align*}
 
 \newpage
+\section{Spatial Non-Discretization}
+
+Spatially discretizing the explicit operator performs poorly.
+Instead, we directly update the system using the formulas:
+\begin{align*}
+    \frac{\partial V_i}{\partial t}
+        & = \varepsilon^{-1} (V_i
+                - \frac{1}{3} V_i^3
+                - W_i)
+            + I_\text{stim}(\bvec{p}_i) \\
+    \frac{\partial W_i}{\partial t}
+        & = \varepsilon (V_i
+            + \beta
+            - \gamma W_i)
+\end{align*}
+\noindent Where $V_i$ and $W_i$ are the DoFs associated with
+$\bvec{v}$ and $\bvec{w}$.
+This is a pointwise update for each DoF:
+for the \texttt{FE\_Q} Lagrange finite element
+(and for certain other finite elements),
+each DoF $i$ can be associated with a spatial point $\bvec{p}_i$
+at which the shape function $\varphi_i(\bvec{p}_i) = 1$.
+So, a pointwise evaluation of this operator is justified.
+The deal.II function \texttt{VectorTools::interpolate}
+handles the evaluation of $I_\text{stim}$ at these support points.
+
+\newpage
 \section{Time Integration}
 
-As a DAE, complications arise when integrating the Bidomain equations
-because the mass matrix is singular.
-Our goal is to solve the first ("explicit") equation using an explicit method such as Forward Euler;
-we solve the second ("implicit") equation using an implicit method such as Backward Euler.
+Time integration of the explicit operator is accomplished
+using an explicit Runge-Kutta method;
+the formulas from the previous section
+can be passed directly to a Runge-Kutta stepper
+since they are already in the required form.
 
-Recall that matrix form of the explicit equation from the previous section:
-\begin{align*}
-    \bmat{M} \dot{\bvec{Q}}
-        = \bmat{A} \bvec{Q}
-            + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
-                \left< \varphi_{b_i} \mid v^3 \right>
-            + \bvec{f}
-\end{align*}
-\noindent To integrate this system, we write the equation as:
-\begin{align*}
-    \dot{\bvec{Q}}
-        & = \bvec{F}_\text{E}(t, \bvec{Q}) \\
-        & = \bmat{M}^{-1}
-            (\bmat{A} \bvec{Q}
-                + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
-                    \left< \varphi_{b_i} \mid v^3 \right>
-                + \bvec{f})
-\end{align*}
-\noindent The solution $\bvec{Q}_{t + 1}$ at time step $t + 1$
-is then given by $\bvec{Q}_t$ plus a weighted sum of stages
-$\bvec{F}_\text{E}(t^{(i)}, \bvec{Q}_t^{(i)})$,
-where each $\bvec{Q}_t^{(i)}$ is itself a weighted sum of previously computed stages.
-However, $\bmat{M}$ is singular
-(because no time derivatives of $u_\text{e}$ appear in the Bidomain equations),
-and all components of the explicit equation's right-hand side are zero
-(because the operator has been split such that the explicit equation does not involve $u_\text{e}$).
-
-Denote the set of all DoF indices by $\mathcal{I} = [0, N)$.
-Then, let $\mathcal{J} = \{\, i \in \mathcal{I} \mid c_i \in \{\,1, 2\,\} \,\}$
-be the set of indices corresponding to the components $v$ and $w$. Then:
-\begin{align*}
-    \bmat{M}_\mathcal{J} \dot{\bvec{Q}}_\mathcal{J}
-        = \bmat{A}_\mathcal{J} \bvec{Q}_\mathcal{J}
-            + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
-                \left< \varphi_{b_i} \mid v^3 \right>
-            + \bvec{f}_\mathcal{J}
-\end{align*}
-\noindent Where a matrix or vector subscripted with $\mathcal{J}$
-denotes that only those elements with indices in $\mathcal{J}$ are included.
-Because there are no longer elements corresponding to the $u_\text{e}$ component
-of the system, $\bmat{M}_\mathcal{J}$ is non-singular, and we may write:
-\begin{align*}
-    \bvec{F}_\text{E}(t, \bvec{Q}_\mathcal{J})
-        = \bmat{M}_\mathcal{J}^{-1}
-            (\bmat{A}_\mathcal{J} \bvec{Q}_\mathcal{J}
-                + \frac{1}{3} \chi \varepsilon^{-1} \delta_{1, c_i}
-                    \left< \varphi_{b_i} \mid v^3 \right>
-                + \bvec{f}_\mathcal{J})
-\end{align*}
-
-Now, we recall the matrix form of the implicit equation:
+Then, we recall the matrix form of the implicit equation:
 \begin{align*}
     \bmat{M} \dot{\bvec{Q}} = \bmat{B} \bvec{Q}
 \end{align*}
@@ -299,16 +279,5 @@ First, we again rearrange the equation:
 \end{align*}
 \noindent Where Backward Euler corresponds to $\theta = 1$
 and Crank Nicolson corresponds to $\theta = \frac{1}{2}$.
-
-Furthermore, we can pull the same trick as with the explicit equation
-and define $\mathcal{K} = \{\, i \in \mathcal{I} \mid c_i \in \{\, 1, 3 \,\} \,\}$.
-Note that in the implicit equation, the only involvement of $w$ is
-the equation $\frac{\partial w}{\partial t} = 0$,
-so $w$ components (with $c_i = 2$) can be safely ignored.
-This yields the update formula:
-\begin{align*}
-    (\bmat{M}_\mathcal{K} - \theta h \bmat{B}_\mathcal{K}) \bvec{Q}_{\mathcal{K}, t + 1}
-        = (\bmat{M}_\mathcal{K} + (1 - \theta) h \bmat{B}_\mathcal{K}) \bvec{Q}_{\mathcal{K}, t}
-\end{align*}
 
 \end{document}
