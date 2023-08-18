@@ -8,8 +8,6 @@ Source code for the Temporal Operator-Splitting Template library
 
 ## Build
 
-
-
 Requires a working installation of deal.II >= v9.4. This can be
 built as follows:
 
@@ -80,5 +78,8 @@ There are a number of example/test programs using deal.II/tostii included in thi
  - `neutron` (See deal.II step-52)
  - `nse` (See deal.II step-58)
  - `monodomain` (Cardiac simulation - Monodomain cell model)
+ - `bidomain` (Cardiac simulation - Bidomain cell model)
 A program defined in `tostii/dir/prog.cc` has its executable saved to `tostii/out/dir/bin/prog`.
 It is recommended that you write a run script, like `run.sh`, to automate building and running programs if needed.
+Some directory contain a `doc/` directory which contains LaTeX documentation on the directories contents;
+it is highly recommended to read the documentation before the code.
