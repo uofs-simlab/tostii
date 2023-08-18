@@ -556,5 +556,8 @@ namespace NSE
                 this->checkpoint(timestep_number);
             }
         }
+
+        computing_timer.print_summary();
+        pcout << std::endl;
     }
 }
