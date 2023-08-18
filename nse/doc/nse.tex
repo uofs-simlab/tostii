@@ -16,6 +16,15 @@
 
 \section{Introduction}
 
+This document is relevant to the targets:
+\begin{itemize}
+    \item \texttt{monolithic}
+    \item \texttt{monolithic\_arkode}
+    \item \texttt{monolithic\_hs}
+\end{itemize}
+See the "Version History" section for more information.
+The section "Toy Problem" is unimplemented.
+
 Let $\Omega \subseteq \mathbb{R}^n$,
 $V : \Omega \rightarrow \mathbb{R}$,
 $\kappa \in \mathbb{R}$,
@@ -298,5 +307,19 @@ So, we must compute $\brmat{J}_{\bvec{W}_k^{(\ell)}}[\bvec{R}_k]$:
 \noindent The Jacobian of $\bvec{C}$ is more difficult to write,
 but $\brmat{J}_{\bvec{W}_k^{(\ell)}}[\bvec{C}]$ can be computed
 using automatic differentiation.
+
+\newpage
+
+\section{Version History}
+
+The target \texttt{monolithic} implements the above problem
+without matrices and using only automatic differentiation.
+\texttt{monolithic\_arkode} is similar
+but uses the SUNDIALS ARKODE solver;
+the detail of the solution is extremely low.
+\texttt{monolithic\_hs} uses the method described above,
+which avoids unnecessary differentiation,
+although the results are not identical to those produced
+by \texttt{monolithic}.
 
 \end{document}
