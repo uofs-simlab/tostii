@@ -130,7 +130,6 @@ namespace NSE
     void NonlinearSchroedingerEquation<dim>::assemble_system()
     {
         pcout << "Assembling system matrices... " << std::flush;
-        TimerOutput::Scope timer_scope(computing_timer, "Assemble System");
 
         stiffness_matrix = 0.;
         old_stiffness_matrix = 0.;
@@ -407,13 +406,14 @@ namespace NSE
         out.add(1., old_solution_residual);
 
         pcout << "norm=" << out.l2_norm() << std::endl;
+
+        setup_jacobian();
     }
 
     template<int dim>
     void NonlinearSchroedingerEquation<dim>::setup_jacobian()
     {
         pcout << "\tSetup Jacobian system... " << std::flush;
-        TimerOutput::Scope timer_scope(computing_timer, "Jacobian Setup");
 
         jacobian_matrix.copy_from(jacobian_C);
         jacobian_matrix.add(1., stiffness_matrix);
@@ -538,9 +538,7 @@ namespace NSE
         solver.setup_jacobian = [this](
             const LA::MPI::Vector&,
             const LA::MPI::Vector&)
-        {
-            this->setup_jacobian();
-        };
+        { };
         solver.solve_with_jacobian = [this](
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out,
