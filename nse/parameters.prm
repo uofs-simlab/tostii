@@ -3,7 +3,7 @@ subsection Finite Element parameters
 
     set Polynomial degree = 2
 
-    set Refinement level = 4
+    set Refinement level = 8
 
 end
 

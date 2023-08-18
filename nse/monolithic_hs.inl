@@ -291,7 +291,7 @@ namespace NSE
         old_stiffness_matrix.vmult_add(old_solution_residual, solution);
 
         old_solution_residual_ready = true;
-        pcout << "norm=" << old_solution_residual.l2_norm() << std::endl;
+        pcout << "done." << std::endl;
     }
 
     template<int dim>
@@ -404,8 +404,8 @@ namespace NSE
         pcout << "\tSetup Jacobian system... " << std::flush;
         TimerOutput::Scope timer_scope(computing_timer, "Jacobian Setup");
 
-        jacobian_matrix.copy_from(stiffness_matrix);
-        jacobian_matrix.add(1., jacobian_C);
+        jacobian_matrix.copy_from(jacobian_C);
+        jacobian_matrix.add(1., stiffness_matrix);
 
         pcout << "done." << std::endl;
     }
@@ -419,9 +419,9 @@ namespace NSE
         pcout << "\tSolving Jacobian system... " << std::flush;
         TimerOutput::Scope timer_scope(computing_timer, "Jacobian Solve");
 
-        LA::MPI::PreconditionAMG preconditioner;
+        PETScWrappers::PreconditionNone preconditioner;
         {
-            LA::MPI::PreconditionAMG::AdditionalData additional_data;
+            PETScWrappers::PreconditionNone::AdditionalData additional_data;
             preconditioner.initialize(jacobian_matrix, additional_data);
         }
 
