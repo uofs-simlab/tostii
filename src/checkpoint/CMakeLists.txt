@@ -1,5 +1,5 @@
 
-set(INCLUDE_DIR "${TOSTII_INCLUDE_DIR}/checkpoint")
+set(INCLUDE_DIR "${TOSTII_INCLUDE_DIR}/tostii/checkpoint")
 set(SOURCES
     "save_manager.cc"
     "checkpointer.cc"

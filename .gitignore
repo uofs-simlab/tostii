@@ -11,5 +11,8 @@ out/
 solution*
 *.tar.gz
 
+# checkpoints
+saves/
+
 # visual studio code files
 .vscode/

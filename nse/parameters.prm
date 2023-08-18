@@ -1,0 +1,36 @@
+
+subsection Finite Element parameters
+
+    set Polynomial degree = 2
+
+    set Refinement level = 8
+
+end
+
+subsection Time Stepping parameters
+
+    set Number of time steps = 2097152
+
+    set Runge-Kutta method = CRANK_NICOLSON
+
+end
+
+subsection Linear Solver parameters
+
+    set Solver tolerance = 1e-16
+
+    set Max iteration multiplier = 100
+
+end
+
+subsection Output parameters
+
+    set Number of output files = 64
+
+    set Output prefix = ./results/solution
+
+    set Number of checkpoints = 64
+
+    set Checkpoint path = ./saves
+
+end

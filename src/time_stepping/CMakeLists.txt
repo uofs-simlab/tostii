@@ -1,5 +1,5 @@
 
-set(INCLUDE_DIR "${TOSTII_INCLUDE_DIR}/time_stepping")
+set(INCLUDE_DIR "${TOSTII_INCLUDE_DIR}/tostii/time_stepping")
 set(SOURCES
     "runge_kutta.cc"
     "explicit_runge_kutta.cc"

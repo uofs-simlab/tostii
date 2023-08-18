@@ -10,10 +10,20 @@
 \newcommand{\ii}{\mathrm{i}}
 \newcommand{\ee}{\mathrm{e}}
 \newcommand{\dd}{\mathrm{d}}
+\newcommand{\TT}{\mathrm{T}}
 
 \begin{document}
 
 \section{Introduction}
+
+This document is relevant to the targets:
+\begin{itemize}
+    \item \texttt{monolithic}
+    \item \texttt{monolithic\_arkode}
+    \item \texttt{monolithic\_hs}
+\end{itemize}
+See the "Version History" section for more information.
+The section "Toy Problem" is unimplemented.
 
 Let $\Omega \subseteq \mathbb{R}^n$,
 $V : \Omega \rightarrow \mathbb{R}$,
@@ -31,7 +41,7 @@ The Nonlinear Schroedinger Equation (NSE) is given by:
 \begin{align*}
 \psi(t, \bvec{x}) = 0
 \end{align*}
-\noindent For all (t, $\bvec{x}) \in (0, T) \times \partial \Omega$.
+\noindent For all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$.
 
 Because $\psi$ is complex-valued, it is convenient to separate the equation into real and imaginary parts.
 If we take $\psi(t, \bvec{x}) = u(t, \bvec{x}) + \ii v(t, \bvec{x})$
@@ -118,13 +128,198 @@ where $\varphi_j : \Omega \rightarrow \mathbb{R}$ is a set of basis functions
 We write $\bvec{w} = \begin{bmatrix}
     u \\
     v
-\end{bmatrix}$ and make the approximation $\bvec{w} = W_j \bvec{\Phi}_j$ (Einstein summation).
+\end{bmatrix}$ and make the approximation $\bvec{w} = W_j \bvec{\Phi}_j$ (Einstein summation);
+furthermore, we approximate $\frac{\partial \bvec{w}}{\partial t} = \dot{W}_j \bvec{\Phi}_j$.
+Then, we have that:
+\begin{align*}
+    u & = W_j \varphi_{b_j} \delta_{1, c_j} \\
+    v & = W_j \varphi_{b_j} \delta_{2, c_j} \\
+    \frac{\partial u}{\partial t} & = \dot{W}_j \varphi_{b_j} \delta_{1, c_j} \\
+    \frac{\partial v}{\partial t} & = \dot{W}_j \varphi_{b_j} \delta_{2, c_j}
+\end{align*}
+
 Then, we multiply and integrate the system with a basis function $\bvec{\Phi}_i$:
 \begin{align*}
     \left< \bvec{\Phi}_i \mid \begin{matrix}
-        \ii \frac{\partial v}{\partial t} - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u \\
-        -\ii \frac{\partial u}{\partial t} - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v
-    \end{matrix} \right> = 0
+            \partial_t v - \frac{1}{2} \Delta u + V u + \kappa (u^2 + v^2) u \\
+            -\partial_t u - \frac{1}{2} \Delta v + V v + \kappa (u^2 + v^2) v
+        \end{matrix} \right> & = 0 \\
+    \ii \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \partial_t v \\
+            -\partial_t u
+        \end{matrix} \right> - \frac{1}{2} \left< \bvec{\Phi}_i \mid \begin{matrix}
+            \Delta u \\
+            \Delta v
+        \end{matrix} \right> + \left< \bvec{\Phi}_i \mid \begin{matrix}
+            V u \\
+            V v
+        \end{matrix} \right> + \kappa \left< \bvec{\Phi}_i \mid \begin{matrix}
+            u^3 \\
+            v^3
+        \end{matrix} \right> + \kappa \left< \bvec{\Phi}_i \mid \begin{matrix}
+            u v^2 \\
+            u^2 v
+        \end{matrix} \right> & = 0
 \end{align*}
+\noindent We consider each form separately:
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        \partial_t v \\
+        -\partial_t u
+    \end{matrix} \right>
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid \partial_t v \right>
+        - \delta_{2, c_i} \left< \varphi_{b_i} \mid \partial_t u \right> \\
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid \dot{W}_j \varphi_{b_j} \delta_{2, c_j} \right>
+        - \delta_{2, c_i} \left< \varphi_{b_i} \mid \dot{W}_j \varphi_{b_j} \delta_{1, c_j} \right> \\
+    & = (\delta_{1, c_i} \delta_{2, c_j} - \delta_{2, c_i} \delta_{1, c_j})
+        \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \dot{W}_j
+\end{align*}
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        \Delta u \\
+        \Delta v
+    \end{matrix} \right>
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid \Delta u \right>
+        + \delta_{2, c_i} \left< \varphi_{b_i} \mid \Delta v \right>
+\end{align*}
+\noindent We note that:
+\begin{align*}
+    \left< \varphi_{b_i} \mid \Delta f \right>
+    & = \int_\Omega \varphi_{b_i} \Delta f \, \dd \bvec{x} \\
+    & = \oint_{\partial \Omega} \varphi_{b_i} \nabla f \cdot \hat{\brvec{n}} \, \dd \bvec{s}
+        - \int_\Omega \nabla \varphi_{b_i} \cdot \nabla f \, \dd \bvec{x} \\
+    & = \left< \varphi_{b_i} \hat{\brvec{n}} \mid \nabla f \right>_{\partial \Omega}
+        - \left< \nabla \varphi_{b_i} \mid \nabla f \right>
+\end{align*}
+\noindent And, because we have Dirichlet boundary conditions,
+we must have that $\varphi_{b_i}(t, \bvec{x}) = 0$
+for all $(t, \bvec{x}) \in (0, T) \times \partial \Omega$. So:
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        \Delta u \\
+        \Delta v
+    \end{matrix} \right>
+    & = -\delta_{1, c_i} \left< \nabla \varphi_{b_i} \mid \nabla u \right>
+        - \delta_{2, c_i} \left< \nabla \varphi_{b_i} \mid \nabla v \right> \\
+    & = -\delta_{1, c_i} \left< \nabla \varphi_{b_i} \mid W_j \nabla \varphi_{b_j} \delta_{1, c_j} \right>
+        - \delta_{2, c_i} \left< \nabla \varphi_{b_i} \mid W_j \nabla \varphi_{b_j} \delta_{2, c_j} \right> \\
+    & = -(\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> W_j
+\end{align*}
+\begin{align*}
+    \left< \bvec{\Phi}_i \mid \begin{matrix}
+        V u \\
+        V v
+    \end{matrix} \right>
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid V u \right>
+        + \delta{2, c_i} \left< \varphi_{b_i} \mid V v \right> \\
+    & = \delta_{1, c_i} \left< \varphi_{b_i} \mid W_j V \varphi_{b_j} \delta_{1, c_j} \right>
+        + \delta_{2, c_i} \left< \varphi_{b_i} \mid W_j V \varphi_{b_j} \delta_{2, c_j} \right> \\
+    & = (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \varphi_{b_i} \mid V \varphi_{b_j} \right> W_j
+\end{align*}
+\noindent We will not use the fact that $\bvec{w} = W_j \bvec{\Phi}_j$
+in considering the nonlinear forms at this time.
+
+So:
+\begin{align*}
+    0 & = (\delta_{1, c_i} \delta_{2, c_j} - \delta_{2, c_i} \delta_{1, c_j})
+            \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \dot{W}_j \\
+        & \qquad + \frac{1}{2} (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+            \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> W_j \\
+        & \qquad + (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+            \left< \varphi_{b_i} \mid V \varphi_{b_j} \right> W_j \\
+        & \qquad + \kappa \delta_{1, c_i} \left< \varphi_{b_i} \mid u^3 + u v^2 \right> \\
+        & \qquad + \kappa \delta_{2, c_i} \left< \varphi_{b_i} \mid v^3 + u^2 v \right>
+\end{align*}
+\noindent If we define:
+\begin{align*}
+    M_{ij} & = (\delta_{1, c_i} \delta_{2, c_j} - \delta_{2, c_i} \delta_{1, c_j})
+        \left< \varphi_{b_i} \mid \varphi_{b_j} \right> \\
+    A_{ij} & = \frac{1}{2} (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \nabla \varphi_{b_i} \mid \nabla \varphi_{b_j} \right> \\
+    B_{ij} & = (\delta_{1, c_i} \delta_{1, c_j} + \delta_{2, c_i} \delta_{2, c_j})
+        \left< \varphi_{b_i} \mid V \varphi_{b_j} \right> \\
+    C_i & = \kappa \delta_{1, c_i} \left< \varphi_{b_i} \mid u^3 + u v^2 \right>
+        + \kappa \delta_{2, c_i} \left< \varphi_{b_i} \mid v^3 + u^2 v \right>
+\end{align*}
+\noindent We rewrite the above equation as:
+\begin{align*}
+    \brvec{0}
+        & = \bmat{M} \dot{\bvec{W}}
+            + (\bmat{A} + \bmat{B}) \bvec{W}
+            + \bvec{C}
+\end{align*}
+
+\newpage
+
+\section{Time Stepping}
+
+In order to solve the monolithic system using Crank-Nicolson
+time stepping, we write:
+\begin{align*}
+    \brvec{0}
+        & = \frac{1}{h} \bmat{M} (\bvec{W}_{k + 1} - \bvec{W}_k)
+            + \frac{1}{2} (\bmat{A} + \bmat{B}) (\bvec{W}_{k + 1} + \bvec{W}_k)
+            + \frac{1}{2} (\bvec{C}_{k + 1} + \bvec{C}_k) \\
+    \brvec{0}
+        & = \bmat{M} (\bvec{W}_{k + 1} - \bvec{W}_k)
+            + \frac{h}{2} (\bmat{A} + \bmat{B}) (\bvec{W}_{k + 1} + \bvec{W}_k)
+            + \frac{h}{2} (\bvec{C}_{k + 1} + \bvec{C}_k)
+\end{align*}
+\noindent Where $h$ is the chosen time step. So, define:
+\begin{align*}
+    \bvec{R}_k(\bvec{W})
+        & = \bmat{M} (\bvec{W} - \bvec{W}_k)
+            + \frac{h}{2} (\bmat{A} + \bmat{B}) (\bvec{W} + \bvec{W}_k)
+            + \frac{h}{2} (\bvec{C} + \bvec{C}_k) \\
+        & = (\bmat{M} + \frac{h}{2} (\bmat{A} + \bmat{B})) \bvec{W}
+            + \frac{h}{2} \bvec{C}
+            + (-\bmat{M} + \frac{h}{2} (\bmat{A} + \bmat{B})) \bvec{W}_k
+            + \frac{h}{2} \bvec{C}_k
+\end{align*}
+\noindent Recall that $\bvec{C}$ can be defined by $\bvec{W}$.
+To step from time step $k$ to $k + 1$,
+we must solve $\bvec{R}_k(\bvec{W}) = \brvec{0}$;
+we do so using Newton iteration, i.e., we repeatedly solve:
+\begin{align*}
+    \brmat{J}_{\bvec{W}_k^{(\ell)}}[\bvec{R}_k] \Delta \bvec{W}_k^{(\ell)}
+        & = -\bvec{R}_k(\bvec{W}_k^{(\ell)}) \\
+    \bvec{W}_k^{(\ell + 1)}
+        & = \bvec{W}_k^{(\ell)} + \alpha_k \Delta \bvec{W}_k^{(\ell)}
+\end{align*}
+Where $\brmat{J}_{\bvec{W}_k^{(\ell)}}[\bvec{R}_k]$
+is the Jacobian matrix of $\bvec{R}_k$
+evaluated at $\bvec{W}_k^{(\ell)}$
+and $\alpha_k$ is a step size chosen by the Newton solver.
+Once the residual norm $\|\bvec{W}_k^{(\ell)}\|$ is sufficiently small,
+we take $\bvec{W}_{k + 1} = \bvec{W}_k^{(\ell)}$.
+
+So, we must compute $\brmat{J}_{\bvec{W}_k^{(\ell)}}[\bvec{R}_k]$:
+\begin{align*}
+    \brmat{J}[\bvec{R}_k]
+        & = \frac{\partial \bvec{R}_k}{\partial \bvec{W}} \\
+        & = \bmat{M} + \frac{h}{2} (\bmat{A} + \bmat{B})
+            + \frac{h}{2} \frac{\partial \bvec{C}}{\partial \bvec{W}} \\
+        & = \bmat{M} + \frac{h}{2} (\bmat{A} + \bmat{B})
+            + \frac{h}{2} \brmat{J}[\bvec{C}]
+\end{align*}
+\noindent The Jacobian of $\bvec{C}$ is more difficult to write,
+but $\brmat{J}_{\bvec{W}_k^{(\ell)}}[\bvec{C}]$ can be computed
+using automatic differentiation.
+
+\newpage
+
+\section{Version History}
+
+The target \texttt{monolithic} implements the above problem
+without matrices and using only automatic differentiation.
+\texttt{monolithic\_arkode} is similar
+but uses the SUNDIALS ARKODE solver;
+the detail of the solution is extremely low.
+\texttt{monolithic\_hs} uses the method described above,
+which avoids unnecessary differentiation,
+although the results are not identical to those produced
+by \texttt{monolithic}.
 
 \end{document}
