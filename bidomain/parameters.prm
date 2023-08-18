@@ -4,7 +4,7 @@ subsection FEM Parameters
 
     set Polynomial degree = 1
 
-    set Global refinement value = 4
+    set Global refinement value = 8
 end
 
 subsection Time Stepping Parameters
