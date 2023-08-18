@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 find_package(deal.II 9.4.0 REQUIRED
-    HINTS $ENV{DEAL_II_DIR})
+    HINTS ${DEAL_II_DIR} $ENV{DEAL_II_DIR})
 
 if (NOT (${DEAL_II_WITH_UMFPACK}
     AND ${DEAL_II_WITH_COMPLEX_VALUES}
@@ -16,10 +16,12 @@ if (NOT (${DEAL_II_WITH_UMFPACK}
         "\tDEAL_II_WITH_UMFPACK        = ON\n"
         "\tDEAL_II_WITH_COMPLEX_VALUES = ON\n"
         "\tDEAL_II_WITH_PETSC          = ON\n"
+        "\tDEAL_II_WITH_SUNDIALS       = ON\n"
         "However, the deal.II library found at ${DEAL_II_PATH} was configured with these options\n"
         "\tDEAL_II_WITH_UMFPACK        = ${DEAL_II_WITH_UMFPACK}\n"
         "\tDEAL_II_WITH_COMPLEX_VALUES = ${DEAL_II_WITH_COMPLEX_VALUES}\n"
         "\tDEAL_II_WITH_PETSC          = ${DEAL_II_WITH_PETSC}\n"
+        "\tDEAL_II_WITH_SUNDIALS       = ${DEAL_II_WITH_SUNDIALS}\n"
         "which conflict with the requirements.")
 endif()
 
