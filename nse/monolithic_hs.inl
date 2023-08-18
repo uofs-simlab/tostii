@@ -95,6 +95,7 @@ namespace NSE
         old_solution_residual_ready = false;
         old_solution_residual.reinit(locally_owned_dofs, mpi_communicator);
         temp.reinit(locally_owned_dofs, mpi_communicator);
+        ghost_temp.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
 
         this->initialize(
             param.checkpoint_path,
@@ -520,7 +521,8 @@ namespace NSE
             const LA::MPI::Vector& y,
             LA::MPI::Vector& out)
         {
-            this->residual(y, out);
+            ghost_temp = y;
+            this->residual(ghost_temp, out);
         };
         solver.setup_jacobian = [this](
             const LA::MPI::Vector&,

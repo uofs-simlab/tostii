@@ -97,6 +97,7 @@ namespace NSE
         bool old_solution_residual_ready;
         LA::MPI::Vector old_solution_residual;
         LA::MPI::Vector temp;
+        LA::MPI::Vector ghost_temp;
 
         SparsityPattern sparsity_pattern;
         /** M + h/2 (A + B) */
