@@ -90,12 +90,24 @@ namespace NSE
             sparsity_pattern,
             mpi_communicator);
 
-        solution.reinit(locally_owned_dofs, mpi_communicator);
-        ghost_solution.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+        solution.reinit(
+            locally_owned_dofs,
+            mpi_communicator);
+        ghost_solution.reinit(
+            locally_owned_dofs,
+            locally_relevant_dofs,
+            mpi_communicator);
         old_solution_residual_ready = false;
-        old_solution_residual.reinit(locally_owned_dofs, mpi_communicator);
-        temp.reinit(locally_owned_dofs, mpi_communicator);
-        ghost_temp.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+        old_solution_residual.reinit(
+            locally_owned_dofs,
+            mpi_communicator);
+        temp.reinit(
+            locally_owned_dofs,
+            mpi_communicator);
+        ghost_temp.reinit(
+            locally_owned_dofs,
+            locally_relevant_dofs,
+            mpi_communicator);
 
         this->initialize(
             param.checkpoint_path,
@@ -105,10 +117,8 @@ namespace NSE
         
         if (this->n_checkpoints() == 0)
         {
-            VectorTools::project(
+            VectorTools::interpolate(
                 dof_handler,
-                constraints,
-                quadrature,
                 PrescribedData::InitialValues<dim>(),
                 solution);
         }
@@ -497,6 +507,7 @@ namespace NSE
     template<int dim>
     void NonlinearSchroedingerEquation<dim>::run()
     {
+        ghost_solution = solution;
         output_results();
 
         const unsigned int mod_output_steps = param.n_output_files
