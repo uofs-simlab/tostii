@@ -54,7 +54,7 @@
 
 // Include our separated time-integration library
 // (has some overlap with deal.II/base/time_stepping.h)
-#include <tostii/tostiiv2.h>
+#include <tostii/tostii.h>
 
 
 // Then the usual placing of all content of this program into a namespace and
@@ -72,10 +72,10 @@ namespace StepOS
   using jac_fun_type = std::function<vector_type(const double, const double, const vector_type &)>;
   using jac_vfun_type = std::vector<jac_fun_type>;
 
-  using time_type = std::complex<double>;
-  #define timereal time.real()
-  // using time_type = double;
-  // #define timereal time
+  // using time_type = std::complex<double>;
+  // #define timereal time.real()
+  using time_type = double;
+  #define timereal time
 
   // @sect3{The <code>NonlineaComplexEquation</code> class}
   //
@@ -165,7 +165,7 @@ namespace StepOS
     : fe(2)
     , dof_handler(triangulation)
     , time(0)
-    , n_time_steps(20)
+    , n_time_steps(20480)
     , time_step(1. / n_time_steps)
     , timestep_number(0)
   {}
@@ -422,25 +422,25 @@ namespace StepOS
         }};
     
     //Complex-valued OS methods
-    std::string os_name{"Milne_2_2_c_i"};
+    // std::string os_name{"Milne_2_2_c_i"};
     // std::string os_name{"A_3_3_c"};
     // std::string os_name{"Yoshida_c"};
-    auto        os_coeffs = tostii::os_complex.at(os_name);
+    // auto        os_coeffs = tostii::os_complex.at(os_name);
 
-    tostii::OperatorSplitSingle<vector_type, time_type> os_stepper(
-        solution,                                                      //
-        std::vector<tostii::OSoperator<vector_type, time_type>>{half_stepper,  //
-                                                        full_stepper}, //
-        os_coeffs);
-
-    // // Real-valued OS methods
-    // std::string os_name{"Strang"};
-    // auto        os_coeffs = tostii::os_method.at(os_name);
     // tostii::OperatorSplitSingle<vector_type, time_type> os_stepper(
-		// 					   solution, //
+    //     solution,                                                      //
     //     std::vector<tostii::OSoperator<vector_type, time_type>>{half_stepper,  //
-		// 					       full_stepper}, //
+    //                                                     full_stepper}, //
     //     os_coeffs);
+
+    // Real-valued OS methods
+    std::string os_name{"Strang"};
+    auto        os_coeffs = tostii::os_method.at(os_name);
+    tostii::OperatorSplitSingle<vector_type, time_type> os_stepper(
+							   solution, //
+        std::vector<tostii::OSoperator<vector_type, time_type>>{half_stepper,  //
+							       full_stepper}, //
+        os_coeffs);
 
     // Main time loop
     for (unsigned int itime=1; itime <= n_time_steps; ++itime)
@@ -455,10 +455,11 @@ namespace StepOS
         auto full_step_name{RK_method_enum_to_string(full_step_method)};
 
 
-        if (timestep_number % 10 == 0) {
-          output_results(os_name+"_Exact_"+full_step_name);
-	      }
+        // if (timestep_number % 10 == 0) {
+        //   output_results(os_name+"_Exact_"+full_step_name);
+	      // }
       }
+
 
       auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;

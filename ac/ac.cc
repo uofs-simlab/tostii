@@ -56,7 +56,7 @@
 
 // Include our separated time-integration library
 // (has some overlap with deal.II/base/time_stepping.h)
-#include <tostii/tostiiv2.h>
+#include <tostii/tostii.h>
 
 
 // Then the usual placing of all content of this program into a namespace and

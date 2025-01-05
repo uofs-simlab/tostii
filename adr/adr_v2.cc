@@ -65,7 +65,7 @@
 #include <chrono>
 // Include our separated time-integration library
 // (has some overlap with deal.II/base/time_stepping.h)
-#include <tostii/tostiiv2.h>
+#include <tostii/tostii.h>
 
 
 // Then the usual placing of all content of this program into a namespace and
@@ -187,7 +187,7 @@ namespace Adr
      dof_handler(triangulation),
      mapping(fe),
      time(0),
-     n_time_steps(3200),
+     n_time_steps(200),
      time_step(1.0 / n_time_steps),
      timestep_number(0)
      {}
@@ -228,8 +228,8 @@ namespace Adr
     mass_minus_tau_advection_u.reinit(sparsity_pattern);
     mass_minus_tau_advection_v.reinit(sparsity_pattern);
 
-    std::cout << "Number of active cells: " << triangulation.n_active_cells() << std::endl;
-    std::cout << "Number of degrees of freedom: " << dof_handler.n_dofs() << std::endl;
+    // std::cout << "Number of active cells: " << triangulation.n_active_cells() << std::endl;
+    // std::cout << "Number of degrees of freedom: " << dof_handler.n_dofs() << std::endl;
   }
 
 
@@ -534,7 +534,7 @@ namespace Adr
     /* Define methods, operators and alpha for operator split */
     tostii::runge_kutta_method            implicit_rk{tostii::SDIRK_5O4};
     tostii::runge_kutta_method            explicit_rk{tostii::RK_CLASSIC_FOURTH_ORDER};
-    tostii::runge_kutta_method             n_explicit{tostii::HEUN2};
+    tostii::runge_kutta_method             n_explicit{tostii::RK_CLASSIC_FOURTH_ORDER};
     tostii::ImplicitRungeKutta<BlockVector<double>, time_type>  implicit_stepper_method(implicit_rk);
     tostii::ExplicitRungeKutta<BlockVector<double>, time_type>  explicit_stepper_method(explicit_rk);
     tostii::ExplicitRungeKutta<BlockVector<double>, time_type>  explicit_negative_stepper_method(n_explicit);
@@ -611,12 +611,12 @@ namespace Adr
 
       time = os_stepper.evolve_one_time_step(time, time_step, solution, methods);
 
-      std::cout << "Time step " << timestep_number << " at t=" << time
-                << std::endl;
+      // std::cout << "Time step " << timestep_number << " at t=" << time
+      //           << std::endl;
 
-      if (timestep_number % 10 == 0) {
-        output_results(os_name, time);
-      }
+      // if (timestep_number % 10 == 0) {
+      //   output_results(os_name, time);
+      // }
     }
 
     // End timing here
@@ -624,6 +624,26 @@ namespace Adr
     std::chrono::duration<double> elapsed = end_time - start_time;
 
     std::cout << "Total execution time: " << elapsed.count() << " seconds" << std::endl;
+
+    // Save solution to CSV files with timestep information
+std::ofstream u_output("solution_u_rk" + std::to_string(n_time_steps) + ".csv");
+std::ofstream v_output("solution_v_rk" + std::to_string(n_time_steps) + ".csv");
+u_output.precision(16);
+v_output.precision(16);
+
+for (unsigned int i = 0; i < solution.block(0).size(); ++i)
+{
+    u_output << solution.block(0)[i] << "\n";
+    v_output << solution.block(1)[i] << "\n";
+}
+
+u_output.close();
+v_output.close();
+
+std::cout << "Solutions saved to solution_u_" << n_time_steps << ".csv and solution_v_" << n_time_steps << ".csv." << std::endl;
+
+
+
   }
 
 } // namespace Adr

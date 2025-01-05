@@ -1,7 +1,8 @@
 
-#include <tostii/tostii.h>
+#include <tostii/tostiiv2.h>
 
 #include <fstream>
+#include <deal.II/sundials/arkode.h>
 
 namespace tostii {
 
@@ -478,6 +479,69 @@ Exact<VectorType,TimeType>::get_status() const {
   return status;
 }
 
+/**----------------------------------------------------------------------
+* ARKode
+ * ----------------------------------------------------------------------
+ */
+
+/**
+ * Constructor for ARKodeStepper.
+ * Initializes ARKode solver with given tolerances.
+ */
+template <typename VectorType, typename TimeType>
+ARKodeStepper<VectorType, TimeType>::ARKodeStepper(
+    const dealii::SUNDIALS::ARKode<VectorType>::AdditionalData &data)
+    : arkode_solver(data) {}
+
+
+template <typename VectorType, typename TimeType>
+void ARKodeStepper<VectorType, TimeType>::reset(const double t, const double dt, const VectorType &y) {
+    arkode_solver.reset(t, dt, y);
+}
+
+template <typename VectorType, typename TimeType>
+void ARKodeStepper<VectorType, TimeType>::solve_ode(VectorType &y) {
+    arkode_solver.solve_ode(y);
+}
+
+template <typename VectorType, typename TimeType>
+void ARKodeStepper<VectorType, TimeType>::solve_ode_incrementally(VectorType &y, const double intermediate_time) {
+    arkode_solver.solve_ode_incrementally(y, intermediate_time);
+}
+
+template <typename VectorType, typename TimeType>
+TimeType ARKodeStepper<VectorType, TimeType>::evolve_one_time_step(
+    std::vector<std::function<void(const TimeType, const VectorType&, VectorType&)>>& F,
+    std::vector<std::function<void(const TimeType, const TimeType, const VectorType&, VectorType&)>>& J_inverse,
+    TimeType t, TimeType delta_t, VectorType& y) {
+
+    // Set implicit function
+    arkode_solver.implicit_function = [F](const TimeType time, const VectorType &u, VectorType &out) {
+        F[0](time, u, out);  // Evaluate first function in F
+    };
+
+    // Set linear solver for Jacobian
+    arkode_solver.solve_linearized_system = [J_inverse](dealii::SUNDIALS::SundialsOperator<VectorType>&,
+                                                        dealii::SUNDIALS::SundialsPreconditioner<VectorType>&,
+                                                        VectorType &x, const VectorType &b, double gamma) {
+        J_inverse[0](0.0, gamma, b, x);  // Solve linearized system
+    };
+
+    // Reset solver with new time step and state
+    arkode_solver.reset(t, delta_t, y);
+
+    // Solve incrementally to evolve over the time step
+    arkode_solver.solve_ode_incrementally(y, t + delta_t);
+
+    return t + delta_t;
+}
+
+
+
+template <typename VectorType, typename TimeType>
+const typename TimeStepping<VectorType, TimeType>::Status& ARKodeStepper<VectorType, TimeType>::get_status() const {
+  return status;
+}
 
 /**----------------------------------------------------------------------
  * OperatorSplit
@@ -558,7 +622,6 @@ TimeType OperatorSplit<BVectorType, TimeType>::evolve_one_time_step(TimeType t, 
                                                        BVectorType& y) {
   std::vector<TimeType> op_time(operators.size(), t); // the current time for each operator
 
-  int i =0;
   // Loop over stages
   for (const auto& pair : stages) {
 
@@ -568,6 +631,78 @@ TimeType OperatorSplit<BVectorType, TimeType>::evolve_one_time_step(TimeType t, 
 
     // Operator info for this stage
     auto          method = operators[op].method;
+    f_vfun_type   function{operators[op].function};
+    jac_vfun_type id_minus_tau_J_inverse{operators[op].id_minus_tau_J_inverse};
+
+    // Update blockref pointers for this stage's state
+    // std::cout<<"y.size() = "<<y.size()<<std::endl;
+    auto m = mask[op];
+    blockrefs[op].reinit(y);//just to make sure the blockrefs are the same size as y
+    for(int j=0;j<nblocks[op];++j) {
+      std::swap(blockrefs[op].block(j), y.block(m[j]));
+    }
+
+    //--------------------------------------------
+    //   DEBUG: checking masking setup
+    //   --------------
+    // std::ofstream outf_b;
+    // outf_b.open("blockrefs.out");
+    // blockrefs[op].print(outf_b);
+    // std::ofstream outf_y;
+    // outf_y.open("y.out");
+    // y.print(outf_y);
+    // ---------------------------
+
+    // Evolve this operator with the masked sub-blocks
+    // std::cout<< "blockrefs[op].size() = " << blockrefs[op].size() << std::endl;
+    // std::cout<< "blockrefs[op].block(0).size() = " << blockrefs[op].block(0).size() << std::endl;
+    // std::cout<< "blockrefs[op].block(j).size() = " << blockrefs[op].block(1).size() << std::endl;
+    op_time[op] = method->evolve_one_time_step(function, //
+					       id_minus_tau_J_inverse, //
+                                               op_time[op], //
+					       alpha * delta_t, //
+					       blockrefs[op]);
+
+    // Swap blocks back
+    for(int j=0;j<nblocks[op];++j) {
+      std::swap(y.block(m[j]),blockrefs[op].block(j));
+    }
+
+    //  std::ofstream output("subproblem_solution_" + std::to_string(i) + ".txt");
+
+    //     for (unsigned int j = 0; j < y.block(0).size(); ++j) {
+    //         output << y.block(0)[j] << "\n";
+    //     }
+
+    //     output.close();
+
+
+  }
+
+  // if(t>0.1)
+  //   exit(0);
+
+  return (t + delta_t);
+}
+
+template <typename BVectorType, typename TimeType>
+TimeType OperatorSplit<BVectorType, TimeType>::evolve_one_time_step(TimeType t, TimeType delta_t,
+                                                       BVectorType& y, 
+                                                       std::map<int, TimeStepping<BVectorType, TimeType>*> methods) {
+  std::vector<TimeType> op_time(operators.size(), t); // the current time for each operator
+
+  int i =0;
+  // Loop over stages
+  for (const auto& pair : stages) {
+
+    // Get stage info
+    auto op    = pair.op_num;
+    auto alpha = pair.alpha;
+    auto method = operators[op].method;
+
+    if (methods.find(i) != methods.end()) {
+      method = methods[i];
+    }
     f_vfun_type   function{operators[op].function};
     jac_vfun_type id_minus_tau_J_inverse{operators[op].id_minus_tau_J_inverse};
 
@@ -676,6 +811,46 @@ TimeType OperatorSplitSingle<VectorType, TimeType>::evolve_one_time_step(
                                                op_time[op],            //
                                                alpha * delta_t,        //
                                                y);
+  }
+
+  return (t + delta_t);
+}
+
+template <typename VectorType, typename TimeType>
+TimeType OperatorSplitSingle<VectorType, TimeType>::evolve_one_time_step(
+    TimeType    t,       //
+    TimeType    delta_t, //
+    VectorType& y,
+    std::map<int, TimeStepping<VectorType, TimeType>*> methods) {
+
+  // the current time for each operator
+  std::vector<TimeType> op_time(operators.size(), t);
+
+  int i = 0;
+
+  // Loop over stages
+  for (const auto& pair : stages) {
+
+    // Get stage info
+    auto op    = pair.op_num;
+    auto alpha = pair.alpha;
+
+    auto          method = operators[op].method;
+
+    if (methods.find(i) != methods.end()) {
+      method = methods[i];
+    }
+
+    f_vfun_type   function{operators[op].function};
+    jac_vfun_type id_minus_tau_J_inverse{operators[op].id_minus_tau_J_inverse};
+
+    // Evolve this operator with the masked sub-blocks
+    op_time[op] = method->evolve_one_time_step(function,               //
+                                               id_minus_tau_J_inverse, //
+                                               op_time[op],            //
+                                               alpha * delta_t,        //
+                                               y);
+    i++;
   }
 
   return (t + delta_t);
@@ -824,6 +999,10 @@ template class ExplicitRungeKutta<dealii::Vector<double>>;
 template class ImplicitRungeKutta<dealii::Vector<double>>;
 template class Exact<dealii::Vector<double>>;
 
+
+template class ARKodeStepper<dealii::Vector<double>>;
+template class ARKodeStepper<dealii::PETScWrappers::MPI::Vector>;
+
 // Complex-valued, with real-valud time
 template class ExplicitRungeKutta<dealii::Vector<std::complex<double>>>;
 template class ImplicitRungeKutta<dealii::Vector<std::complex<double>>>;
@@ -858,7 +1037,6 @@ template class OperatorSplit<dealii::PETScWrappers::MPI::BlockVector>;
 
 template class OperatorSplitSingle<dealii::Vector<std::complex<double>>>;
 template class OperatorSplitSingle<dealii::Vector<std::complex<double>>,std::complex<double>>;
-
 template class OperatorSplitSingle<dealii::Vector<double>, double>;
 
 }

@@ -5,13 +5,16 @@
  * end of the file.
  */
 #pragma once
-#ifndef TOSTII_HPP
-#define TOSTII_HPP
+#ifndef TOSTIIV2_HPP
+#define TOSTIIV2_HPP
 
 #include <complex>
 #include <unordered_map>
 
 #include <deal.II/lac/generic_linear_algebra.h>
+#include <deal.II/sundials/arkode.h>
+
+
 
 namespace LA {
 #if defined(DEAL_II_WITH_PETSC) && !defined(DEAL_II_PETSC_WITH_COMPLEX) &&     \
@@ -72,6 +75,49 @@ public:
    */
   virtual const Status& get_status() const = 0;
 };
+
+
+/** **************************************************************************
+
+    ARKode
+
+*/
+template <typename VectorType, typename TimeType = double>
+class ARKodeStepper : public TimeStepping<VectorType, TimeType> {
+public:
+  ARKodeStepper(const dealii::SUNDIALS::ARKode<VectorType>::AdditionalData &data);
+
+
+    void set_implicit_function(
+      std::function<void(const TimeType, const VectorType&, VectorType&)> func) {
+    arkode_solver.implicit_function = func;
+  }
+
+   void set_solve_linearized_system(
+      std::function<void(dealii::SUNDIALS::SundialsOperator<VectorType>&,
+                         dealii::SUNDIALS::SundialsPreconditioner<VectorType>&,
+                         VectorType&, const VectorType&, double)> func) {
+    arkode_solver.solve_linearized_system = func;
+  }
+
+   TimeType evolve_one_time_step(
+        std::vector<std::function<void(const TimeType, const VectorType&, VectorType&)>>& F,
+        std::vector<std::function<void(const TimeType, const TimeType, const VectorType&, VectorType&)>>& J_inverse,
+        TimeType t, TimeType delta_t, VectorType& y) override;
+
+    const typename TimeStepping<VectorType, TimeType>::Status& get_status() const override;
+
+    void reset(const double t, const double dt, const VectorType &y);
+    void solve_ode(VectorType &y);
+    void solve_ode_incrementally(VectorType &y, const double intermediate_time);
+
+private:
+    dealii::SUNDIALS::ARKode<VectorType> arkode_solver;
+    typename TimeStepping<VectorType, TimeType>::Status status;
+};
+
+
+
 
 /** **************************************************************************
 
@@ -552,6 +598,14 @@ public:
   /** Trimmed down function for an OS method that has been setup */
   TimeType evolve_one_time_step(TimeType t, TimeType delta_t, BVectorType& y);
 
+  
+  TimeType evolve_one_time_step(TimeType t, 
+                                TimeType delta_t, 
+                                BVectorType& y, 
+                                std::map<int, TimeStepping<BVectorType, TimeType>*> methods);
+
+  
+
   /**
    *
    */
@@ -739,12 +793,21 @@ static const std::unordered_map<std::string, //
              OSpair<std::complex<double>>{1, 7. / 25. + 1. / 25. * i}}}, //
         {"A_3_3_c",
          std::vector<OSpair<std::complex<double>>>{
-             OSpair<std::complex<double>>{1,
-                                          0.25 + 0.144337567297406441 * i},   //
+             OSpair<std::complex<double>>{1, 0.25 + 0.144337567297406441 * i},   //
              OSpair<std::complex<double>>{0, 0.5 + 0.288675134594812882 * i}, //
              OSpair<std::complex<double>>{1, 0.5},                            //
              OSpair<std::complex<double>>{0, 0.5 - 0.288675134594812882 * i}, //
              OSpair<std::complex<double>>{1, 0.25 - 0.144337567297406441 * i}}},
+
+        {"Yoshida_c",
+          std::vector<OSpair<std::complex<double>>>{
+            OSpair<std::complex<double>>{1, 0.1621982020100856 + 0.0672931362454034 * i},  //
+            OSpair<std::complex<double>>{0, 0.3243964040201712 + 0.1345862724908067 * i},  //
+            OSpair<std::complex<double>>{1, 0.3378017979899144 - 0.0672931362454034 * i},  //
+            OSpair<std::complex<double>>{0, 0.3512071919596576 - 0.26917254498161341 * i},  //
+            OSpair<std::complex<double>>{1, 0.3378017979899144 - 0.0672931362454034 * i},  //
+            OSpair<std::complex<double>>{0, 0.3243964040201712 + 0.1345862724908067 * i},
+            OSpair<std::complex<double>>{1, 0.1621982020100856 + 0.0672931362454034 * i}}}, //
         // 3-split methods
         {"AKT_2_2_c",
          std::vector<OSpair<std::complex<double>>>{
@@ -825,6 +888,11 @@ public:
 
   /** Trimmed down function for an OS method that has been setup */
   TimeType evolve_one_time_step(TimeType t, TimeType delta_t, VectorType& y);
+
+  TimeType evolve_one_time_step(TimeType t, 
+                              TimeType delta_t, 
+                              VectorType& y, 
+                              std::map<int, TimeStepping<VectorType, TimeType>*> methods);
 
   /**
    * Construction of Status object is just default from the base class

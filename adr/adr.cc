@@ -184,7 +184,7 @@ namespace Adr
      dof_handler(triangulation),
      mapping(fe),
      time(0),
-     n_time_steps(12800),
+     n_time_steps(50000),
      time_step(1.0 / n_time_steps),
      timestep_number(0) 
      {}
@@ -609,6 +609,23 @@ namespace Adr
     std::chrono::duration<double> elapsed = end_time - start_time;
 
     std::cout << "Total execution time: " << elapsed.count() << " seconds" << std::endl;
+
+    std::ofstream u_output("solution_u_" + std::to_string(n_time_steps) + ".csv");
+std::ofstream v_output("solution_v_" + std::to_string(n_time_steps) + ".csv");
+u_output.precision(16);
+v_output.precision(16);
+
+for (unsigned int i = 0; i < solution.block(0).size(); ++i)
+{
+    u_output << solution.block(0)[i] << "\n";
+    v_output << solution.block(1)[i] << "\n";
+}
+
+u_output.close();
+v_output.close();
+
+std::cout << "Solutions saved to solution_u_" << n_time_steps << ".csv and solution_v_" << n_time_steps << ".csv." << std::endl;
+
   }
 
 } // namespace Adrs
