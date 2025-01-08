@@ -116,6 +116,43 @@ private:
     typename TimeStepping<VectorType, TimeType>::Status status;
 };
 
+/** **************************************************************************
+
+    Explicit ARKode
+
+*/
+
+template <typename VectorType, typename TimeType = double>
+class ARKodeExplicitStepper : public TimeStepping<VectorType, TimeType> {
+  public:
+  using AdditionalData = typename dealii::SUNDIALS::ARKode<VectorType>::AdditionalData;
+
+  ARKodeExplicitStepper(const AdditionalData &data);
+
+  /**
+   * Set the explicit right-hand side function, \f$f(t,y)\f$.
+   * ARKode will call this to compute the ODE RHS for each step.
+   */
+  void set_explicit_function(std::function<void(const TimeType, const VectorType&, VectorType&)> func);
+
+  /**
+   * Advance the solution from time t to t + delta_t using a purely explicit scheme.
+   * Here, F is a vector of functions.
+   * J_inverse is ignored, because we don't do any implicit solves in an explicit method.
+   */
+  TimeType evolve_one_time_step(
+      std::vector<std::function<void(const TimeType, const VectorType&, VectorType&)>> &F,
+      std::vector<std::function<void(const TimeType, const TimeType, const VectorType&, VectorType&)>> & /*J_inverse*/,
+      TimeType t, TimeType delta_t, VectorType &y) override;
+
+  const typename TimeStepping<VectorType, TimeType>::Status & get_status() const override;
+
+private:
+  dealii::SUNDIALS::ARKode<VectorType> arkode_solver;
+  typename TimeStepping<VectorType, TimeType>::Status status;
+};
+
+
 
 
 

@@ -479,6 +479,55 @@ Exact<VectorType,TimeType>::get_status() const {
 }
 
 /**----------------------------------------------------------------------
+* ExplicitARKode
+* ----------------------------------------------------------------------
+ */
+
+ template <typename VectorType, typename TimeType>
+ ARKodeExplicitStepper<VectorType, TimeType>::ARKodeExplicitStepper(
+    const dealii::SUNDIALS::ARKode<VectorType>::AdditionalData &data)
+    : arkode_solver(data) {}
+
+ template <typename VectorType, typename TimeType>
+  void ARKodeExplicitStepper<VectorType, TimeType>::set_explicit_function(
+      std::function<void(const TimeType, const VectorType&, VectorType&)> func) {
+
+    arkode_solver.explicit_function = func;
+  }
+
+  /**
+   * The main driver for one time step from t to t + delta_t.
+   * Because this is an explicit solver, we only need the explicit function(s).
+   *
+   * We ignore J_inverse because we won't do any implicit solve here.
+   */
+
+  template <typename VectorType, typename TimeType>
+  TimeType ARKodeExplicitStepper<VectorType, TimeType>::evolve_one_time_step(
+      std::vector<std::function<void(const TimeType, const VectorType&, VectorType&)>>& F,
+      std::vector<std::function<void(const TimeType, const TimeType,
+                                           const VectorType&, VectorType&)>>& /*J_inverse*/,
+      TimeType t, TimeType delta_t, VectorType& y) {
+    // Typically, we only use F[0], so you might want to check that F.size() >= 1
+    // and then set ARKode’s explicit function from F[0].
+
+    if (!F.empty())
+      arkode_solver.explicit_function = F[0];
+
+    arkode_solver.reset(t, delta_t, y);
+
+    arkode_solver.solve_ode_incrementally(y, t + delta_t);
+
+    return t + delta_t;
+  }
+
+  template <typename VectorType, typename TimeType>
+  const typename TimeStepping<VectorType, TimeType>::Status &
+  ARKodeExplicitStepper<VectorType, TimeType>::get_status() const {
+    return status;
+  }
+  
+/**----------------------------------------------------------------------
 * ARKode
  * ----------------------------------------------------------------------
  */
@@ -1001,6 +1050,9 @@ template class Exact<dealii::Vector<double>>;
 
 template class ARKodeStepper<dealii::Vector<double>>;
 template class ARKodeStepper<dealii::PETScWrappers::MPI::Vector>;
+
+template class ARKodeExplicitStepper<dealii::Vector<double>>;
+template class ARKodeExplicitStepper<dealii::PETScWrappers::MPI::Vector>;
 
 // Complex-valued, with real-valud time
 template class ExplicitRungeKutta<dealii::Vector<std::complex<double>>>;
