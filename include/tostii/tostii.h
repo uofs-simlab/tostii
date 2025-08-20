@@ -5,8 +5,8 @@
  * end of the file.
  */
 #pragma once
-#ifndef TOSTIIV2_HPP
-#define TOSTIIV2_HPP
+#ifndef TOSTII_HPP
+#define TOSTII_HPP
 
 #include <complex>
 #include <unordered_map>
@@ -696,6 +696,16 @@ static const double c_pp3a3[3] = {-0.360420727960349671, //
 static const double y_omega[2] = {-1.702414383919315268, //
                                   1.351207191959657634};
 
+static const double a_bm4_6[3] = {0.245298957184271,
+                                  0.604872665711080,
+                                  0.5 - (0.245298957184271 + 0.604872665711080)};  
+
+static const double b_bm4_6[4] = {0.0829844064174052,
+                                  0.396309801498368,
+                                  -0.0390563049223486,
+                                  1 - 2 * (b_bm4_6[0] + b_bm4_6[1] + b_bm4_6[2])};  
+
+
 /**
    Define a small dictionary of possible OS methods
 */
@@ -721,6 +731,23 @@ static const std::unordered_map<std::string, std::vector<OSpair<double>>>
              OSpair<double>{0, (y_omega[0] + y_omega[1]) / 2.0}, //
              OSpair<double>{1, y_omega[1]},                    //
              OSpair<double>{0, y_omega[1] / 2.0}}},            //
+
+        
+        {"BM4_6",
+          std::vector<OSpair<double>>{
+            OSpair<double>{1, b_bm4_6[0]},  //
+            OSpair<double>{0, a_bm4_6[0]}, //
+            OSpair<double>{1, b_bm4_6[1]}, //
+            OSpair<double>{0, a_bm4_6[1]}, //
+            OSpair<double>{1, b_bm4_6[2]}, //
+            OSpair<double>{0, a_bm4_6[2]}, //
+            OSpair<double>{1, b_bm4_6[3]}, //
+            OSpair<double>{0, a_bm4_6[2]}, //
+            OSpair<double>{1, b_bm4_6[2]}, //
+            OSpair<double>{0, a_bm4_6[1]}, //
+            OSpair<double>{1, b_bm4_6[1]}, //
+            OSpair<double>{0, a_bm4_6[0]}, //
+            OSpair<double>{1, b_bm4_6[0]}}}, //
 
         // 3-split methods
         {"Godunov3", std::vector<OSpair<double>>{OSpair<double>{0, 1.0},   //
@@ -873,7 +900,23 @@ static const std::unordered_map<std::string, //
              OSpair<std::complex<double>>{2, a_pp3a3c[1]},  //
              OSpair<std::complex<double>>{0, c_pp3a3c[0]},  //
              OSpair<std::complex<double>>{1, b_pp3a3c[0]},  //
-             OSpair<std::complex<double>>{2, a_pp3a3c[0]}}} //
+             OSpair<std::complex<double>>{2, a_pp3a3c[0]}}}, //
+
+        {"AC_4_7_c",
+          std::vector<OSpair<std::complex<double>>>{
+            OSpair<std::complex<double>>{1, (0.1655101882118 + 0.03704896872215 * i) * 0.5}, 
+            OSpair<std::complex<double>>{0, 0.4706 * 0.5}, 
+            OSpair<std::complex<double>>{1, (1./ 2 - 0.1655101882118 - 0.6300845020773 * i) * 0.5}, 
+            OSpair<std::complex<double>>{0, (1 -  2. * 0.4706) * 0.5},
+            OSpair<std::complex<double>>{1, (1./ 2 - 0.1655101882118 + 0.6300845020773 * i) * 0.5},
+            OSpair<std::complex<double>>{0, 0.4706 * 0.5},
+            OSpair<std::complex<double>>{1, (2. * (0.1655101882118 - 0.03704896872215 * i)) * 0.5},
+            OSpair<std::complex<double>>{0, 0.4706 * 0.5},
+            OSpair<std::complex<double>>{1, (1./ 2 - 0.1655101882118 + 0.6300845020773 * i) * 0.5},
+            OSpair<std::complex<double>>{0, (1 - 2. * 0.4706) * 0.5},
+            OSpair<std::complex<double>>{1, (1./ 2 - 0.1655101882118 - 0.6300845020773 * i) * 0.5},
+            OSpair<std::complex<double>>{0, 0.4706 * 0.5},
+            OSpair<std::complex<double>>{1, (0.1655101882118 + 0.03704896872215 * i) * 0.5}}} //
     };
 
 /**

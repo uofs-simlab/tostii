@@ -38,9 +38,8 @@ foreach(macro_file ${macro_files})
     include(${macro_file})
 endforeach()
 
-add_subdirectory("complexpde")
-add_subdirectory("ac")
-add_subdirectory("adr")
-
+add_subdirectory("examples/ac")
+add_subdirectory("examples/adr")
+add_subdirectory("examples/complexpde")
 
 add_subdirectory("doc")
