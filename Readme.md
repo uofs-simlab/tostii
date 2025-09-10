@@ -24,7 +24,8 @@ cd ../../..
 
 3. Edit candi's configuration options.
 For example, uncomment the line that reads `#PACKAGES="${PACKAGES} once:sundials"` (needed for this project),
-and comment out the line that reads `PACKAGES="${PACKAGES} once:slepc"` (because it doesn't work for candi).
+and comment out the line that reads `PACKAGES="${PACKAGES} once:slepc"` (because it doesn't work for candi),
+and add `DEAL_II_CONFOPTS="-DDEAL_II_WITH_COMPLEX_VALUES=ON"`
 ```sh
 vim candi.cfg
 ```
