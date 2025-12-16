@@ -1,1 +1,8 @@
 candi/
+
+# VTK output files
+*.vtu
+*.pvtu
+
+# CSV data files
+*.csv

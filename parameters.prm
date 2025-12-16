@@ -1,0 +1,137 @@
+# Listing of Parameters
+# ---------------------
+subsection FEM Parameters
+  # Problem dimension (2 or 3)
+  set Dimension value = 2
+
+  # Polynomial degree for FEM discretization
+  set Polynomial degree = 1
+
+  # Global refinement level
+  set Global refinement value = 4
+
+  # Apply adaptive refiniment
+  set Adaptive refinement = false
+
+  # Boundary condition type (Neumann or Dirichlet)
+  set Boundary condition type = Dirichlet
+end
+
+subsection Time Stepping Parameters
+  # Number of time steps (positive integer)
+  set Number of time steps = 100
+  
+  # Initial time t0
+  set Initial time value = 0.0 # in ms
+
+  # Final time tf
+  set Final time value = 1.0 # in ms
+
+  # Time stepping method (see choices below)
+  # choose BACKWARD_EULER, IMPLICIT_MIDPOINT, CRANK_NICOLSON, or SDIRK_TWO_STAGES (Bidomain and EMI only use BACKWARD_EULER for now)
+  set Time stepping method = BACKWARD_EULER
+end
+
+subsection Geometry
+  # Domain length
+  set Length = 20.0 # in mm
+
+  # Domain width
+  set Width = 5.0 # in mm
+
+  # Domain height
+  set Height = 1.0 # in mm
+
+  # Single cell length
+  set Cell length = 0.140 # in mm
+
+  # Single cell width
+  set Cell width = 0.025 # in mm
+
+  # Single cell height
+  set Cell height = 0.025 # in mm
+
+  # Number of cells in x direction
+  set Cells in x = 2 # dimensionless
+
+  # Number of cells in y direction
+  set Cells in y = 2 # dimensionless
+
+  # Number of cells in z direction
+  set Cells in z = 2 # dimensionless
+
+  # Intracellular space id
+  set Intracellular id = 1 # dimensionless
+
+  # Extracellular space id
+  set Extracellular id = 0 # dimensionless
+
+  # Gap junction space id
+  set Gap junction id = 3 # dimensionless
+end
+
+subsection Cell Parameters
+  # Cells per unit volume
+  set chi value = 200.0 # in 1/mm
+
+  # Capacitance
+  set Cm value = 1.0e-2 # in uF/cm^2 = 1e-2*uF/mm^2
+
+  # Resistance
+  set Rm value = 1.0e1 # in kOhm*cm^2 = 1e2*mV*mm^2/uA
+
+  # Intracellular active conductivity
+  set sigmai value = 20.0e-1 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Intracellular passive conductivity in x
+  set sigmaix value = 2.0e-1 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Intracellular passive conductivity in y
+  set sigmaiy value = 2.0e-2 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Intracellular passive conductivity in z
+  set sigmaiz value = 2.0e-2 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Extracellular active conductivity
+  set sigmae value = 5.0e-1 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Extracellular passive conductivity in x
+  set sigmaex value = 8.0e-1 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Extracellular passive conductivity in y
+  set sigmaey value = 2.0e-1 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Extracellular passive conductivity in z
+  set sigmaez value = 2.0e-1 # in mS/cm = 1e-1*uA/mV/mm
+
+  # Multiplier lambda
+  set lambda value = 1.0 # dimensionless
+end
+
+subsection Linear Solver Parameters
+  # # Type of solver used to solve the linear system
+  # set Solver type = CG # not used yet (commented out in the codes)
+
+  # Linear solver residual (scaled by residual norm)
+  set Residual = 1e-12
+
+  # Linear solver iterations (multiples of the system matrix size)
+  set Max iteration multiplier = 10
+end
+
+subsection Miscellaneous Parameters
+  # Number of messages to print in terminal during computation
+  set Number of messages to print = 100
+
+  # Flag to output pvtu files
+  set Output solution pvtu files = true
+
+  # Number of pvtu files to visualize solution
+  set Number of pvtu files = 1
+
+  # Flag to output solution error data
+  set Output solution error data = true
+
+  # File name for convergence study data
+  set File name = output_l2_error.txt
+end

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libtostii.a CMakeFiles/tostii.dir/tostii.cc.o
+/usr/bin/ranlib libtostii.a

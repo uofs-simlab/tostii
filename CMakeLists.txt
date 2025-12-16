@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.5.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
@@ -41,6 +41,7 @@ endforeach()
 add_subdirectory("complexpde")
 add_subdirectory("ac")
 add_subdirectory("adr")
+add_subdirectory("monodomain")
 
 
 add_subdirectory("doc")
