@@ -541,20 +541,34 @@ ARKodeStepper<VectorType, TimeType>::ARKodeStepper(
     const dealii::SUNDIALS::ARKode<VectorType>::AdditionalData &data)
     : arkode_solver(data) {}
 
+template <typename VectorType, typename TimeType>
+ARKodeStepper<VectorType, TimeType>::ARKodeStepper(
+    const dealii::SUNDIALS::ARKode<VectorType>::AdditionalData &data,
+    const MPI_Comm                                               mpi_comm)
+    : arkode_solver(data, mpi_comm) {}
+
 
 template <typename VectorType, typename TimeType>
 void ARKodeStepper<VectorType, TimeType>::reset(const double t, const double dt, const VectorType &y) {
     arkode_solver.reset(t, dt, y);
+    is_initialized = true;
+    last_end_time = t;
 }
 
 template <typename VectorType, typename TimeType>
 void ARKodeStepper<VectorType, TimeType>::solve_ode(VectorType &y) {
     arkode_solver.solve_ode(y);
+    is_initialized = true;
 }
 
 template <typename VectorType, typename TimeType>
-void ARKodeStepper<VectorType, TimeType>::solve_ode_incrementally(VectorType &y, const double intermediate_time) {
+void ARKodeStepper<VectorType, TimeType>::solve_ode_incrementally(
+  VectorType &y,
+  const double intermediate_time)
+{
     arkode_solver.solve_ode_incrementally(y, intermediate_time);
+    is_initialized = true;
+    last_end_time  = intermediate_time;
 }
 
 template <typename VectorType, typename TimeType>
@@ -563,25 +577,29 @@ TimeType ARKodeStepper<VectorType, TimeType>::evolve_one_time_step(
     std::vector<std::function<void(const TimeType, const TimeType, const VectorType&, VectorType&)>>& J_inverse,
     TimeType t, TimeType delta_t, VectorType& y) {
 
-    // Set implicit function
-    arkode_solver.implicit_function = [F](const TimeType time, const VectorType &u, VectorType &out) {
-        F[0](time, u, out);  // Evaluate first function in F
-    };
+    AssertThrow(!F.empty(),
+                dealii::ExcMessage("ARKodeStepper requires at least one RHS function."));
 
-    // Set linear solver for Jacobian
-    arkode_solver.solve_linearized_system = [J_inverse](dealii::SUNDIALS::SundialsOperator<VectorType>&,
-                                                        dealii::SUNDIALS::SundialsPreconditioner<VectorType>&,
-                                                        VectorType &x, const VectorType &b, double gamma) {
-        J_inverse[0](0.0, gamma, b, x);  // Solve linearized system
-    };
+    // Set implicit function for the implicit-only ARKode/DIRK path.
+    arkode_solver.implicit_function =
+      [F](const TimeType time, const VectorType &u, VectorType &out) {
+        F[0](time, u, out);
+      };
 
-    // Reset solver with new time step and state
-    arkode_solver.reset(t, delta_t, y);
+    (void)J_inverse;
 
-    // Solve incrementally to evolve over the time step
-    arkode_solver.solve_ode_incrementally(y, t + delta_t);
+    const TimeType time_tolerance =
+      1e-12 * std::max<TimeType>(1.0, std::abs(t));
 
-    return t + delta_t;
+    if (!is_initialized || std::abs(t - last_end_time) > time_tolerance)
+      arkode_solver.reset(t, delta_t, y);
+
+    const TimeType new_time = t + delta_t;
+    arkode_solver.solve_ode_incrementally(y, new_time);
+    is_initialized = true;
+    last_end_time = new_time;
+
+    return new_time;
 }
 
 
@@ -1089,5 +1107,6 @@ template class OperatorSplit<dealii::PETScWrappers::MPI::BlockVector>;
 template class OperatorSplitSingle<dealii::Vector<std::complex<double>>>;
 template class OperatorSplitSingle<dealii::Vector<std::complex<double>>,std::complex<double>>;
 template class OperatorSplitSingle<dealii::Vector<double>, double>;
+template class OperatorSplitSingle<dealii::PETScWrappers::MPI::Vector>;
 
 }

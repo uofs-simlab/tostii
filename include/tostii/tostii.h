@@ -11,6 +11,7 @@
 #include <complex>
 #include <unordered_map>
 
+#include <deal.II/base/mpi.h>
 #include <deal.II/lac/generic_linear_algebra.h>
 #include <deal.II/sundials/arkode.h>
 
@@ -85,7 +86,12 @@ public:
 template <typename VectorType, typename TimeType = double>
 class ARKodeStepper : public TimeStepping<VectorType, TimeType> {
 public:
+  using AdditionalData =
+    typename dealii::SUNDIALS::ARKode<VectorType>::AdditionalData;
+
   ARKodeStepper(const dealii::SUNDIALS::ARKode<VectorType>::AdditionalData &data);
+  ARKodeStepper(const dealii::SUNDIALS::ARKode<VectorType>::AdditionalData &data,
+                const MPI_Comm                                               mpi_comm);
 
 
     void set_implicit_function(
@@ -93,7 +99,34 @@ public:
     arkode_solver.implicit_function = func;
   }
 
-   void set_solve_linearized_system(
+  void set_jacobian_times_vector(
+      std::function<void(const VectorType&,
+                         VectorType&,
+                         const TimeType,
+                         const VectorType&,
+                         const VectorType&)> func) {
+    arkode_solver.jacobian_times_vector = func;
+  }
+
+  void set_jacobian_times_setup(
+      std::function<void(const TimeType, const VectorType&, const VectorType&)>
+        func) {
+    arkode_solver.jacobian_times_setup = func;
+  }
+
+  void set_jacobian_preconditioner_solve(
+      std::function<void(const TimeType,
+                         const VectorType&,
+                         const VectorType&,
+                         const VectorType&,
+                         VectorType&,
+                         const double,
+                         const double,
+                         const int)> func) {
+    arkode_solver.jacobian_preconditioner_solve = func;
+  }
+
+  void set_solve_linearized_system(
       std::function<void(dealii::SUNDIALS::SundialsOperator<VectorType>&,
                          dealii::SUNDIALS::SundialsPreconditioner<VectorType>&,
                          VectorType&, const VectorType&, double)> func) {
@@ -114,6 +147,8 @@ public:
 private:
     dealii::SUNDIALS::ARKode<VectorType> arkode_solver;
     typename TimeStepping<VectorType, TimeType>::Status status;
+    bool                                               is_initialized = false;
+    TimeType                                           last_end_time  = TimeType();
 };
 
 /** **************************************************************************
