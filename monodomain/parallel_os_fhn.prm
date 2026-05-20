@@ -1,0 +1,71 @@
+subsection Mesh and Time
+  set Domain half length           = 50.0
+  set Global refinements           = 4
+  set Finite element degree        = 1
+  set Final time                   = 100.0
+  set Time step                    = 1e-2
+  set Output stride                = 100
+  set Mesh adaptation frequency    = 50
+  set Maximum delta refinement level = 5
+  set Mesh refinement fraction     = 0.3
+  set Mesh coarsening fraction     = 0.15
+end
+
+subsection Time integrator
+  set OS method        = Strang
+  # Implicit RK for the diffusion sub-step
+  # Choices: BACKWARD_EULER | IMPLICIT_MIDPOINT | CRANK_NICOLSON |
+  #          SDIRK_TWO_STAGES | SDIRK_THREE_STAGES | SDIRK_3O4 | SDIRK_5O4
+  set Diffusion method = SDIRK_TWO_STAGES
+
+  # Explicit RK for the reaction sub-step
+  # Choices: FORWARD_EULER | EXPLICIT_MIDPOINT | HEUN2 |
+  #          RK_THIRD_ORDER | SSP_THIRD_ORDER | RK_CLASSIC_FOURTH_ORDER
+  set Reaction method  = HEUN2
+end
+
+subsection Initial condition
+  set Type        = spiral
+  set Center x    = 0.0
+  set Center y    = 0.0
+  set Amplitude v = 1.0
+  set Amplitude w = 0.5
+  set Steepness x = 5.0
+  set Steepness y = 5.0
+end
+
+subsection Solution limiter
+  set Enable voltage limiter = false
+  set Minimum voltage        = -0.2
+  set Maximum voltage        =  1.05
+end
+
+subsection Output
+  set Output directory = outputs
+  set Label suffix     = os
+end
+
+subsection Model
+  # kinetic_I:  (1/eps)*v*(1-v)*(v-(w+b)/a),  alpha*v - gamma*w
+  # kinetic_II: v*(1-v)*(v-beta) - w,          gamma*(alpha*v - w)
+  set Kinetic model   = kinetic_II
+  set Epsilon         = 0.005
+  set A parameter     = 0.3
+  set B parameter     = 0.01
+  set Alpha parameter = 0.37
+  set Gamma parameter = 0.02
+  set Diffusion v     = 1.0
+  set Diffusion w     = 0.0
+  set Beta parameter  = 0.131655
+end
+
+subsection Diagnostics
+  set Diagnostic stride                   = 25
+  set Excitation threshold                = 0.3
+  set Area epsilon                        = 1e-14
+  set Diagnosis start time                = 6.0
+  set Ignition max v threshold            = 0.3
+  set Ignition max v fraction of initial  = 0.25
+  set Ignition excited fraction threshold = 1e-3
+  set Required ignition hits              = 8
+end

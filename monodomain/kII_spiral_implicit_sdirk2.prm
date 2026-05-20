@@ -1,0 +1,64 @@
+subsection Mesh and Time
+  set Domain half length           = 50.0
+  set Global refinements           = 4
+  set Finite element degree        = 1
+  set Final time                   = 100.0
+  set Time step                    = 1e-2
+  set Output stride                = 100
+  set Mesh adaptation frequency    = 50
+  set Maximum delta refinement level = 5
+  set Mesh refinement fraction     = 0.3
+  set Mesh coarsening fraction     = 0.15
+end
+
+subsection Time integrator
+  set ARKode minimum step size                    = 1e-2
+  set ARKode maximum order                        = 2
+  set ARKode maximum nonlinear iterations         = 10
+  set ARKode absolute tolerance                   = 1e-4
+  set ARKode relative tolerance                   = 1e-4
+  set ARKode implicit function is linear          = false
+  set ARKode implicit function is time independent = false
+end
+
+subsection Initial condition
+  set Type        = spiral
+  set Center x    = 0.0
+  set Center y    = 0.0
+  set Amplitude v = 1.0
+  set Amplitude w = 0.5
+  set Steepness x = 5.0
+  set Steepness y = 5.0
+end
+
+subsection Output
+  set Output directory = outputs
+  set Label suffix     = kII_ARKODE
+end
+
+subsection Model
+  set Epsilon         = 0.005
+  set A parameter     = 0.3
+  set B parameter     = 0.01
+  set Alpha parameter = 0.37
+  set Gamma parameter = 0.02
+  set Diffusion v     = 1.0
+  set Diffusion w     = 0.0
+  set Beta parameter  = 0.131655
+  set Kinetic model   = kinetic_II
+end
+
+subsection Diagnostics
+  set Diagnostic stride                   = 25
+  set Excitation threshold                = 0.3
+  set Area epsilon                        = 1e-14
+  set Diagnosis start time                = 6.0
+  set Ignition max v threshold            = 0.3
+  set Ignition max v fraction of initial  = 0.25
+  set Ignition excited fraction threshold = 1e-3
+  set Required ignition hits              = 8
+end
+
+subsection Solution limiter
+  set Enable voltage limiter = false
+end

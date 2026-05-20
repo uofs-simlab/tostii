@@ -1,0 +1,66 @@
+subsection Mesh and Time
+  set Domain half length           = 20.0
+  set Global refinements           = 3
+  set Finite element degree        = 1
+  set Final time                   = 10.0
+  set Time step                    = 1e-2
+  set Output stride                = 100
+  set Mesh adaptation frequency    = 50
+  set Maximum delta refinement level = 4
+  set Mesh refinement fraction     = 0.3
+  set Mesh coarsening fraction     = 0.15
+end
+
+subsection Time integrator
+  set Type               = bdf
+  set Adaptivity type    = basic
+  set Maximum steps      = -1
+  set Match step         = true
+  set Restart if remesh  = false
+  set Minimum step size  = 1e-6
+  set Maximum step size  = 1e-1
+  set Absolute tolerance = 1e-6
+  set Relative tolerance = 1e-4
+end
+
+subsection Initial condition
+  set Type         = disk
+  set Center x     = 0.0
+  set Center y     = 0.0
+  set Amplitude v  = 0.5
+  set Amplitude w  = 0.0
+  set Radius       = 2.0
+  set Smooth width = 0.5
+end
+
+subsection Output
+  set Output directory = outputs
+  set Label suffix     = kII
+end
+
+subsection Model
+  set Epsilon         = 0.005
+  set A parameter     = 0.3
+  set B parameter     = 0.01
+  set Alpha parameter = 0.5
+  set Gamma parameter = 0.1
+  set Diffusion v     = 1.0
+  set Diffusion w     = 0.0
+  set Beta parameter  = 0.1
+  set Kinetic model   = kinetic_II
+end
+
+subsection Diagnostics
+  set Diagnostic stride                   = 20
+  set Excitation threshold                = 0.3
+  set Area epsilon                        = 1e-14
+  set Diagnosis start time                = 0.5
+  set Ignition max v threshold            = 0.3
+  set Ignition max v fraction of initial  = 0.25
+  set Ignition excited fraction threshold = 1e-3
+  set Required ignition hits              = 2
+end
+
+subsection Solution limiter
+  set Enable voltage limiter = false
+end
